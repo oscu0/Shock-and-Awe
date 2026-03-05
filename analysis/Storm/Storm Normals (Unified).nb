@@ -1,0 +1,752 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     26865,        744]
+NotebookOptionsPosition[     25720,        715]
+NotebookOutlinePosition[     26113,        731]
+CellTagsIndexPosition[     26070,        728]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Unified Shock Normals: Planar + Spherical", "Title",ExpressionUUID->"2c3b011a-80f7-4449-9e68-794e3da8acbb"],
+
+Cell["\<\
+This notebook reads Shocks/shock_params.json, loads each date folder \
+parquet files, and computes:
+1) planar (kinematic) normal
+2) spherical fixed-radius (4-satellite) normals
+
+Outputs are exported to Shocks/shock_normals_wolfram.json.\
+\>", "Text",ExpressionUUID->"2a934a31-24b6-4411-bcd8-fbe7f4419354"],
+
+Cell["\<\
+ClearAll[
+  reKm, auKm, auOverRe, repoRootCandidates, repoRoot, shocksRoot, \
+shockParamsPath, satBlacklist,
+  normalizeSatName, parseDateValue, pickFirstNumeric, convertPositionUnits,
+  extractPositionFromRow, extractVelocityFromRow, toAssocRows, \
+extractTimestamps,
+  nearestRowAtT0, nearestRowWithPosition, loadDateData, \
+choosePlanarSatTriplet, chooseSphericalSatQuad, chooseVelocityVector,
+  normalVector, planarNormalForDateData, sphericalNormalsForDateData, \
+sphericalNormalsForDateDataNMinimize,
+  computeDateNormals, buildAllNormals, jsonReady
+];
+
+reKm = 6371.;
+auKm = 150.*10^6;
+auOverRe = auKm/reKm;
+
+repoRootCandidates = DeleteDuplicates@Cases[{
+  Quiet@Check[DirectoryName[DirectoryName[NotebookDirectory[]]], \
+Missing[\"NoFrontEndDir\"]],
+  Quiet@Check[DirectoryName[DirectoryName[Directory[]]], \
+Missing[\"NoCwdDir\"]],
+  \"/Users/aosh/Developer/ICME_list\"
+}, _String];
+
+repoRoot = SelectFirst[
+  repoRootCandidates,
+  FileExistsQ[FileNameJoin[{#, \"Shocks\", \"shock_params.json\"}]] &,
+  First[repoRootCandidates]
+];
+
+shocksRoot = FileNameJoin[{repoRoot, \"Data\"}];
+shockParamsPath = FileNameJoin[{repoRoot, \"Shocks\", \"shock_params.json\"}];
+satBlacklist = {\"stereo\", \"themis_c\"};
+
+normalizeSatName[s_String] := ToLowerCase[StringReplace[s, {\"_\" -> \"\", \
+\"-\" -> \"\"}]];
+
+parseDateValue[val_] := Module[{n, sec},
+  Which[
+    Head[val] === DateObject, val,
+    StringQ[val], Quiet@Check[DateObject[val], Missing[\"BadDate\"]],
+    NumericQ[val],
+      n = N[val];
+      sec = Which[
+        Abs[n] > 10^14, n/10.^9,
+        Abs[n] > 10^11, n/1000.,
+        True, n
+      ];
+      Quiet@Check[DateObject[FromUnixTime[sec, TimeZone -> 0]], \
+Missing[\"BadDate\"]],
+    True, Missing[\"BadDate\"]
+  ]
+];
+
+pickFirstNumeric[row_Association, keys_List] := Module[{k},
+  k = SelectFirst[keys, KeyExistsQ[row, #] && NumericQ[row[#]] &, \
+Missing[\"NotFound\"]];
+  If[MissingQ[k], Missing[\"NotFound\"], N[row[k]]]
+];
+
+convertPositionUnits[pos_List] := If[Max[Abs[pos]] > 5000, pos/reKm, pos];
+
+extractPositionFromRow[row_Association] := Module[{x, y, z},
+  x = pickFirstNumeric[row, {\"x\", \"X\", \"X_GSE\", \"x_gse\"}];
+  y = pickFirstNumeric[row, {\"y\", \"Y\", \"Y_GSE\", \"y_gse\"}];
+  z = pickFirstNumeric[row, {\"z\", \"Z\", \"Z_GSE\", \"z_gse\"}];
+  If[AnyTrue[{x, y, z}, MissingQ], Missing[\"NoPosition\"], \
+convertPositionUnits[{x, y, z}]]
+];
+
+extractVelocityFromRow[row_Association] := Module[{vx, vy, vz, v},
+  vx = pickFirstNumeric[row, {\"v_x\", \"V_X_GSE\", \"vx\", \"VX\"}];
+  vy = pickFirstNumeric[row, {\"v_y\", \"V_Y_GSE\", \"vy\", \"VY\"}];
+  vz = pickFirstNumeric[row, {\"v_z\", \"V_Z_GSE\", \"vz\", \"VZ\"}];
+  If[!AnyTrue[{vx, vy, vz}, MissingQ], Return[{vx, vy, vz}]];
+
+  v = pickFirstNumeric[row, {\"v\", \"V\"}];
+  If[MissingQ[v], Missing[\"NoVelocity\"], {-Abs[v], 0., 0.}]
+];
+
+toAssocRows[raw_] := Module[{d = raw, keys, cols},
+  d = If[Head[d] === Dataset || Head[d] === Tabular, Normal[d], d];
+  Which[
+    ListQ[d] && Length[d] > 0 && AssociationQ[First[d]], d,
+
+    AssociationQ[d],
+      keys = Keys[d];
+      cols = Lookup[d, keys];
+      If[AllTrue[cols, ListQ] && Length[Union[Length /@ cols]] == 1,
+        Map[AssociationThread[keys, #] &, Transpose[cols]],
+        {}
+      ],
+
+    True, {}
+  ]
+];
+
+extractTimestamps[rows_List] := Module[{keys, tKey},
+  If[rows === {} || !AssociationQ[First[rows]], Return[ConstantArray[Missing[\
+\"NoTime\"], Length[rows]]]];
+  keys = Keys[First[rows]];
+  tKey = SelectFirst[{\"time\", \"Time\", \"datetime\", \"date\", \"timestamp\
+\", \"Timestamp\", \"t\"}, MemberQ[keys, #] &, Missing[\"NoTimeKey\"]];
+  If[MissingQ[tKey], ConstantArray[Missing[\"NoTime\"], Length[rows]], \
+parseDateValue /@ Lookup[rows, tKey]]
+];
+
+nearestRowAtT0[rows_List, t0_DateObject] := Module[{ts, idx, score},
+  If[rows === {}, Return[Missing[\"NoRows\"]]];
+  ts = extractTimestamps[rows];
+  score = Map[If[Head[#] === DateObject, Abs[AbsoluteTime[#] - \
+AbsoluteTime[t0]], Infinity] &, ts];
+  idx = If[Min[score] < Infinity, First@Ordering[score, 1], \
+Ceiling[Length[rows]/2]];
+  rows[[idx]]
+];
+
+nearestRowWithPosition[rows_List, t0_DateObject] := Module[{rowsWithPos},
+  rowsWithPos = Select[rows, !MissingQ[extractPositionFromRow[#]] &];
+  If[rowsWithPos === {}, Missing[\"NoPositionRows\"], \
+nearestRowAtT0[rowsWithPos, t0]]
+];
+
+loadDateData[date_String, dateParams_Association] := Module[{folder, files, \
+map, sats, satData, satKey, satNorm, satParams, file, raw, rows, t0, row, \
+rowPos, pos, vel},
+  folder = FileNameJoin[{shocksRoot, date}];
+  files = FileNames[\"*.parquet\", folder];
+  map = Association[(normalizeSatName[FileBaseName[#]] -> #) & /@ files];
+
+  sats = Keys[dateParams];
+  satData = Association[];
+
+  Do[
+    satNorm = normalizeSatName[satKey];
+    If[MemberQ[satBlacklist, satNorm],
+      satData[satKey] = <|\"status\" -> \"blacklisted\"|>;
+      Continue[];
+    ];
+
+    satParams = Lookup[dateParams, satKey, Missing[\"NoParams\"]];
+    If[!AssociationQ[satParams],
+      satData[satKey] = <|\"status\" -> \"no_params\"|>;
+      Continue[];
+    ];
+
+    file = Lookup[map, satNorm, Missing[\"NoFile\"]];
+
+    If[MissingQ[file],
+      satData[satKey] = <|\"status\" -> \"missing_file\"|>;,
+
+      raw = Quiet@Check[Import[file], $Failed];
+      If[raw === $Failed,
+        satData[satKey] = <|\"status\" -> \"import_failed\", \"file\" -> \
+file|>;,
+
+        rows = toAssocRows[raw];
+        t0 = parseDateValue[Lookup[satParams, \"t0\", Missing[]]];
+
+        If[rows === {} || Head[t0] =!= DateObject,
+          satData[satKey] = <|\"status\" -> \"no_rows_or_bad_t0\", \"file\" \
+-> file, \"t0\" -> t0|>;,
+
+          row = nearestRowAtT0[rows, t0];
+          rowPos = row;
+          pos = extractPositionFromRow[rowPos];
+          If[MissingQ[pos],
+            rowPos = nearestRowWithPosition[rows, t0];
+            If[Head[rowPos] === Association,
+              pos = extractPositionFromRow[rowPos]
+            ];
+          ];
+          vel = extractVelocityFromRow[row];
+
+          satData[satKey] = <|
+            \"status\" -> \"ok\",
+            \"file\" -> file,
+            \"t0\" -> t0,
+            \"params\" -> satParams,
+            \"position\" -> pos,
+            \"velocity\" -> vel,
+            \"row\" -> row,
+            \"row_position\" -> rowPos
+          |>
+        ]
+      ]
+    ],
+    {satKey, sats}
+  ];
+
+  satData
+];
+
+choosePlanarSatTriplet[dateData_Association] := Module[{valid, \
+preferredTriplets},
+  valid = Select[Keys[dateData],
+    KeyExistsQ[dateData[#], \"position\"] && \
+VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
+\", Missing[]]] === DateObject &
+  ];
+
+  preferredTriplets = {
+    {\"ace\", \"mms1\", \"dscovr\"},
+    {\"ace\", \"wind\", \"dscovr\"},
+    {\"ace\", \"wind\", \"mms1\"},
+    {\"ace\", \"wind\", \"themis_b\"},
+    {\"ace\", \"wind\", \"themis_c\"},
+    {\"ace\", \"mms1\", \"wind\"},
+    {\"wind\", \"themis_b\", \"themis_c\"}
+  };
+
+  SelectFirst[preferredTriplets, SubsetQ[valid, #] &, If[Length[valid] >= 3, \
+Take[valid, 3], Missing[\"NoTriplet\"]]]
+];
+
+chooseSphericalSatQuad[dateData_Association] := Module[{valid, preferredQuads},
+  valid = Select[Keys[dateData],
+    KeyExistsQ[dateData[#], \"position\"] && \
+VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
+\", Missing[]]] === DateObject &
+  ];
+
+  preferredQuads = {
+  {\"ace\", \"wind\", \"dscovr\", \"mms1\"},
+  \t{\"ace\", \"mms1\", \"dscovr\", \"themis_b\"},
+    {\"dscovr\", \"ace\", \"wind\", \"themis_b\"},
+    {\"ace\", \"wind\", \"dscovr\", \"mms1\"},
+    {\"ace\", \"wind\", \"dscovr\", \"soho\"}
+  };
+
+  SelectFirst[preferredQuads, SubsetQ[valid, #] &, If[Length[valid] >= 4, \
+Take[valid, 4], Missing[\"NoQuad\"]]]
+];
+
+chooseVelocityVector[dateData_Association, preferred_: {\"dscovr\", \"wind\", \
+\"ace\"}] := Module[{cands, sat},
+  cands = Join[preferred, Complement[Keys[dateData], preferred]];
+  sat = SelectFirst[cands,
+    KeyExistsQ[dateData, #] && AssociationQ[dateData[#]] &&     \
+KeyExistsQ[dateData[#], \"velocity\"] && VectorQ[dateData[#][\"velocity\"], \
+NumericQ] &,
+    Missing[\"NoVelocitySat\"]
+  ];
+  If[MissingQ[sat], <|\"sat\" -> Missing[\"NoVelocitySat\"], \"v\" -> \
+Missing[\"NoVelocity\"]|>, <|\"sat\" -> sat, \"v\" -> \
+N[dateData[sat][\"velocity\"]]|>]
+];
+
+normalVector[t12_, t13_, v_List, r1_List, r2_List, r3_List, nZ_: 1.] := Module[
+  {aX, aY, aZ, bX, bY, bZ, cX, cY, cZ, vX, vY, vZ, nX, nY, vec, denomX, \
+denomY},
+
+  {aX, aY, aZ} = N[r1];
+  {bX, bY, bZ} = N[r2];
+  {cX, cY, cZ} = N[r3];
+  {vX, vY, vZ} = N[v];
+
+  denomX = ((-aX + cX - t13*vX)*(-aY + bY - t12*vY) - (-aX + bX - \
+t12*vX)*(-aY + cY - t13*vY));
+  denomY = (-aY*bX + aX*bY + aY*cX - bY*cX - aX*cY + bX*cY + aY*t12*vX - \
+cY*t12*vX - aY*t13*vX + bY*t13*vX - aX*t12*vY + cX*t12*vY + aX*t13*vY - \
+bX*t13*vY);
+
+  If[denomX == 0 || denomY == 0, Return[Missing[\"SingularGeometry\"]]];
+
+  nX = -((-nZ*(-aY + cY - t13*vY)*(-aZ + bZ - t12*vZ) + nZ*(-aY + bY - \
+t12*vY)*(-aZ + cZ - t13*vZ))/denomX);
+
+  nY = -((-aZ*bX*nZ + aX*bZ*nZ + aZ*cX*nZ - bZ*cX*nZ - aX*cZ*nZ + bX*cZ*nZ + \
+aZ*nZ*t12*vX - cZ*nZ*t12*vX - aZ*nZ*t13*vX + bZ*nZ*t13*vX - aX*nZ*t12*vZ + \
+cX*nZ*t12*vZ + aX*nZ*t13*vZ - bX*nZ*t13*vZ)/denomY);
+
+  vec = N[{nX, nY, nZ}];
+  If[!VectorQ[vec, NumericQ] || Norm[vec] == 0, Missing[\"BadNormal\"], \
+Normalize[vec]]
+];
+
+planarNormalForDateData[dateData_Association] := Module[{triad, velInfo, v, \
+s1, s2, s3, t1, t2, t3, r1, r2, r3, t12, t13, n},
+  triad = choosePlanarSatTriplet[dateData];
+  If[MissingQ[triad], Return[<|\"status\" -> \"insufficient_satellites\"|>]];
+
+  velInfo = chooseVelocityVector[dateData];
+  If[MissingQ[velInfo[\"sat\"]] || !VectorQ[velInfo[\"v\"], NumericQ], \
+Return[<|\"status\" -> \"no_velocity\", \"triplet\" -> triad|>]];
+
+  {s1, s2, s3} = triad;
+  t1 = dateData[s1][\"t0\"];
+  t2 = dateData[s2][\"t0\"];
+  t3 = dateData[s3][\"t0\"];
+
+  r1 = dateData[s1][\"position\"];
+  r2 = dateData[s2][\"position\"];
+  r3 = dateData[s3][\"position\"];
+
+  t12 = (AbsoluteTime[t1] - AbsoluteTime[t2])/auOverRe;
+  t13 = (AbsoluteTime[t1] - AbsoluteTime[t3])/auOverRe;
+
+  v = velInfo[\"v\"];
+  n = normalVector[t12, t13, v, r1, r2, r3];
+
+  If[MissingQ[n], <|\"status\" -> \"failed\", \"triplet\" -> triad, \
+\"velocity_sat\" -> velInfo[\"sat\"]|>,
+    <|
+      \"status\" -> \"ok\",
+      \"triplet\" -> triad,
+      \"velocity_sat\" -> velInfo[\"sat\"],
+      \"velocity\" -> v,
+      \"normal\" -> n
+    |>
+  ]
+];
+
+sphericalNormalsForDateDataNMinimize[dateData_Association] := \
+Module[{validSats, velInfo, refSat, v, dt, pos, vars, cx, cy, cz, r0, sigma, \
+objective, sol, rules, normals, center},
+  validSats = Select[Keys[dateData],
+    KeyExistsQ[dateData[#], \"position\"] && \
+VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
+\", Missing[]]] === DateObject &
+  ];
+
+  If[Length[validSats] < 4, Return[<|\"status\" -> \
+\"insufficient_satellites\", \"satellites\" -> validSats|>]];
+
+  velInfo = chooseVelocityVector[dateData, {\"dscovr\", \"wind\", \"ace\", \
+\"themis_b\"}];
+  If[MissingQ[velInfo[\"sat\"]] || !VectorQ[velInfo[\"v\"], NumericQ], \
+Return[<|\"status\" -> \"no_velocity\", \"satellites\" -> validSats|>]];
+
+  refSat = velInfo[\"sat\"];
+  v = velInfo[\"v\"];
+
+  dt = AssociationMap[(AbsoluteTime[dateData[#][\"t0\"]] - \
+AbsoluteTime[dateData[refSat][\"t0\"]])/auOverRe &, validSats];
+  pos = AssociationMap[N[dateData[#][\"position\"]] &, validSats];
+
+  vars = {cx, cy, cz, r0, sigma};
+  objective = Total[(Norm[pos[#] - ({cx, cy, cz} + v*dt[#])] - (r0 + \
+sigma*dt[#]))^2 & /@ validSats];
+
+  sol = Quiet@Check[NMinimize[{objective, r0 > 0}, vars, Method -> \
+\"NelderMead\"], $Failed];
+  If[sol === $Failed || !ListQ[sol] || Length[sol] != 2,
+    Return[<|\"status\" -> \"fit_failed\", \"satellites\" -> validSats|>]
+  ];
+
+  rules = Last[sol];
+  center = ({cx, cy, cz} /. rules);
+
+  normals = AssociationMap[
+    Normalize[pos[#] - (({cx, cy, cz} + v*dt[#]) /. rules)] &,
+    validSats
+  ];
+
+  <|
+    \"status\" -> \"ok\",
+    \"method\" -> \"legacy_expanding_radius_nminimize\",
+    \"velocity_sat\" -> refSat,
+    \"velocity\" -> v,
+    \"satellites\" -> validSats,
+    \"objective\" -> N[First[sol]],
+    \"center\" -> center,
+    \"r0\" -> N[r0 /. rules],
+    \"sigma\" -> N[sigma /. rules],
+    \"normals\" -> normals
+  |>
+];
+
+sphericalNormalsForDateData[dateData_Association] := Module[{validSats, quad, \
+velInfo, timeRefSat, v, dt, pos, advectedPos, p1, p2, p3, p4, mat, rhs, \
+center, sigma, r0, normals},
+  validSats = Select[Keys[dateData],
+    KeyExistsQ[dateData[#], \"position\"] && \
+VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
+\", Missing[]]] === DateObject &
+  ];
+
+  quad = chooseSphericalSatQuad[dateData];
+  If[MissingQ[quad], Return[<|\"status\" -> \"insufficient_satellites\", \
+\"satellites\" -> validSats|>]];
+
+  velInfo = chooseVelocityVector[dateData, {\"dscovr\", \"wind\", \"ace\", \
+\"themis_b\"}];
+  If[MissingQ[velInfo[\"sat\"]] || !VectorQ[velInfo[\"v\"], NumericQ], \
+Return[<|\"status\" -> \"no_velocity\", \"satellites\" -> quad|>]];
+
+  timeRefSat = First@MinimalBy[quad, AbsoluteTime[dateData[#][\"t0\"]] &];
+  v = N[velInfo[\"v\"]];
+
+  dt = AssociationMap[(AbsoluteTime[dateData[#][\"t0\"]] - \
+AbsoluteTime[dateData[timeRefSat][\"t0\"]])/auOverRe &, quad];
+  pos = AssociationMap[N[dateData[#][\"position\"]] &, quad];
+  advectedPos = AssociationMap[pos[#] - v*dt[#] &, quad];
+
+  {p1, p2, p3, p4} = advectedPos /@ quad;
+  mat = 2*{
+    p1 - p2,
+    p1 - p3,
+    p1 - p4
+  };
+  rhs = {
+    p1.p1 - p2.p2,
+    p1.p1 - p3.p3,
+    p1.p1 - p4.p4
+  };
+
+  If[Abs[Det[mat]] < 10^-10,
+    Return[<|\"status\" -> \"singular_geometry\", \"satellites\" -> quad, \
+\"velocity_sat\" -> velInfo[\"sat\"], \"reference_sat\" -> timeRefSat|>]
+  ];
+
+  center = N[LinearSolve[mat, rhs]];
+  sigma = N[Norm[p1 - center]^2];
+  r0 = N[Sqrt[sigma]];
+
+  If[!NumericQ[sigma] || sigma <= 0,
+    Return[<|\"status\" -> \"fit_failed\", \"satellites\" -> quad, \
+\"velocity_sat\" -> velInfo[\"sat\"], \"reference_sat\" -> timeRefSat|>]
+  ];
+
+  normals = AssociationMap[
+    Normalize[pos[#] - (center + v*dt[#])] &,
+    quad
+  ];
+
+  <|
+    \"status\" -> \"ok\",
+    \"method\" -> \"fixed_radius_4sat\",
+    \"legacy_spherical_method\" -> \"parked_expanding_radius_nminimize\",
+    \"velocity_sat\" -> velInfo[\"sat\"],
+    \"reference_sat\" -> timeRefSat,
+    \"velocity\" -> v,
+    \"satellites\" -> quad,
+    \"center\" -> center,
+    \"r0\" -> r0,
+    \"sigma\" -> sigma,
+    \"normals\" -> normals
+  |>
+];
+
+computeDateNormals[date_String, params_Association] := Module[{dateData, \
+planar, spherical},
+  dateData = loadDateData[date, params[date]];
+  planar = planarNormalForDateData[dateData];
+  spherical = sphericalNormalsForDateData[dateData];
+  <|\"planar\" -> planar, \"spherical\" -> spherical|>
+];
+
+buildAllNormals[] := Module[{params, dates},
+  params = Import[shockParamsPath, \"RawJSON\"];
+  If[!AssociationQ[params], Return[$Failed]];
+  dates = Sort[Keys[params]];
+  AssociationMap[computeDateNormals[#, params] &, dates]
+];
+
+jsonReady[x_] := Which[
+  AssociationQ[x], AssociationMap[jsonReady, x],
+  ListQ[x], jsonReady /@ x,
+  Head[x] === DateObject, DateString[x, {\"ISODate\", \" \", \"Time\"}],
+  Head[x] === Missing, Null,
+  NumericQ[x], N[x],
+  True, x
+];\
+\>", "Input",
+ CellChangeTimes->{{3.98144241519333*^9, 3.981442419059883*^9}, {
+   3.981443917044405*^9, 3.9814439200762463`*^9}, 3.9814450876558733`*^9, {
+   3.981447251976173*^9, 3.981447261895735*^9}},
+ CellLabel->
+  "In[807]:=",ExpressionUUID->"ba674989-7de0-4943-bbbe-ffe70995740c"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+allNormals = buildAllNormals[];
+
+If[allNormals === $Failed,
+  Print[\"Failed to load shock parameters from: \" <> shockParamsPath],
+  Print[\"Computed dates: \" <> ToString[Length[Keys[allNormals]]]]
+];
+
+outputPath = FileNameJoin[{repoRoot, \"Shocks\", \"shock_normals_wolfram.json\"}];
+Export[outputPath, jsonReady[allNormals], \"RawJSON\"];
+Print[\"Exported: \" <> outputPath];\
+\>", "Input",
+ CellLabel->
+  "In[862]:=",ExpressionUUID->"cd3d968d-fa7a-42a9-8126-ed9ce9176840"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["\<\"Computed dates: 7\"\>"], "Print",
+ CellChangeTimes->{3.9811878642655907`*^9, 3.981303711650807*^9, 
+  3.9814415427610493`*^9, 3.9814424851154613`*^9, 3.981444000122745*^9, 
+  3.981445154320135*^9, 3.9814470750339193`*^9, 3.981447322245078*^9},
+ CellLabel->
+  "During evaluation of \
+In[862]:=",ExpressionUUID->"cb9a0b08-3e1d-40af-af91-f97397340c61"],
+
+Cell[BoxData["\<\"Exported: \
+/Users/aosh/Developer/ICME_list/Shocks/shock_normals_wolfram.json\"\>"], "Print",\
+
+ CellChangeTimes->{3.9811878642655907`*^9, 3.981303711650807*^9, 
+  3.9814415427610493`*^9, 3.9814424851154613`*^9, 3.981444000122745*^9, 
+  3.981445154320135*^9, 3.9814470750339193`*^9, 3.981447322246582*^9},
+ CellLabel->
+  "During evaluation of \
+In[862]:=",ExpressionUUID->"e94423f8-7817-44a2-94bc-1709cad5659f"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+(* quick peek *)
+If[AssociationQ[allNormals],
+  KeyTake[allNormals, Take[Keys[allNormals], UpTo[2]]],
+  allNormals
+]\
+\>", "Input",
+ CellLabel->
+  "In[869]:=",ExpressionUUID->"7ae5cb36-7666-4162-9702-4480ad911b8c"],
+
+Cell[BoxData[
+ RowBox[{"\[LeftAssociation]", 
+  RowBox[{
+   RowBox[{"\<\"2022-01-16 19-09-00\"\>", "\[Rule]", 
+    RowBox[{"\[LeftAssociation]", 
+     RowBox[{
+      RowBox[{"\<\"planar\"\>", "\[Rule]", 
+       RowBox[{"\[LeftAssociation]", 
+        RowBox[{
+         RowBox[{"\<\"status\"\>", "\[Rule]", "\<\"ok\"\>"}], ",", 
+         RowBox[{"\<\"triplet\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           
+           RowBox[{"\<\"ace\"\>", ",", "\<\"mms1\"\>", 
+            ",", "\<\"dscovr\"\>"}], "}"}]}], ",", 
+         RowBox[{"\<\"velocity_sat\"\>", "\[Rule]", "\<\"dscovr\"\>"}], ",", 
+         RowBox[{"\<\"velocity\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"-", "557.5`"}], ",", "35.400001525878906`", ",", 
+            RowBox[{"-", "22.399999618530273`"}]}], "}"}]}], ",", 
+         RowBox[{"\<\"normal\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"-", "0.951199559225228`"}], ",", 
+            RowBox[{"-", "0.08345797074604147`"}], ",", 
+            "0.29707602671485484`"}], "}"}]}]}], "\[RightAssociation]"}]}], ",", 
+      RowBox[{"\<\"spherical\"\>", "\[Rule]", 
+       RowBox[{"\[LeftAssociation]", 
+        RowBox[{
+         RowBox[{"\<\"status\"\>", "\[Rule]", "\<\"ok\"\>"}], ",", 
+         RowBox[{"\<\"method\"\>", "\[Rule]", "\<\"fixed_radius_4sat\"\>"}], ",", 
+         RowBox[{"\<\"legacy_spherical_method\"\>", 
+          "\[Rule]", "\<\"parked_expanding_radius_nminimize\"\>"}], ",", 
+         RowBox[{"\<\"velocity_sat\"\>", "\[Rule]", "\<\"dscovr\"\>"}], ",", 
+         RowBox[{"\<\"reference_sat\"\>", "\[Rule]", "\<\"mms1\"\>"}], ",", 
+         RowBox[{"\<\"velocity\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"-", "557.5`"}], ",", "35.400001525878906`", ",", 
+            RowBox[{"-", "22.399999618530273`"}]}], "}"}]}], ",", 
+         RowBox[{"\<\"satellites\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           
+           RowBox[{"\<\"ace\"\>", ",", "\<\"wind\"\>", ",", "\<\"dscovr\"\>", 
+            ",", "\<\"mms1\"\>"}], "}"}]}], ",", 
+         RowBox[{"\<\"center\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{"231.24711123554857`", ",", 
+            RowBox[{"-", "93.10298795598194`"}], ",", "287.18113569227677`"}],
+            "}"}]}], ",", 
+         RowBox[{"\<\"r0\"\>", "\[Rule]", "367.93738447980763`"}], ",", 
+         RowBox[{"\<\"sigma\"\>", "\[Rule]", "135377.9188978418`"}], ",", 
+         RowBox[{"\<\"normals\"\>", "\[Rule]", 
+          RowBox[{"\[LeftAssociation]", 
+           RowBox[{
+            RowBox[{"\<\"ace\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{"0.5558853715820528`", ",", "0.315705831035457`", ",", 
+               RowBox[{"-", "0.7689741750613569`"}]}], "}"}]}], ",", 
+            RowBox[{"\<\"wind\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{"0.6187293783429489`", ",", "0.30555285794911785`", ",", 
+               RowBox[{"-", "0.7237481657140652`"}]}], "}"}]}], ",", 
+            RowBox[{"\<\"dscovr\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{"0.5528174314213458`", ",", "0.10649107526633744`", ",", 
+               RowBox[{"-", "0.826469925892845`"}]}], "}"}]}], ",", 
+            RowBox[{"\<\"mms1\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"-", "0.5750257618118283`"}], ",", 
+               "0.2649758192876365`", ",", 
+               RowBox[{"-", "0.7740369425586688`"}]}], "}"}]}]}], 
+           "\[RightAssociation]"}]}]}], "\[RightAssociation]"}]}]}], 
+     "\[RightAssociation]"}]}], ",", 
+   RowBox[{"\<\"2023-02-26 19-23-00\"\>", "\[Rule]", 
+    RowBox[{"\[LeftAssociation]", 
+     RowBox[{
+      RowBox[{"\<\"planar\"\>", "\[Rule]", 
+       RowBox[{"\[LeftAssociation]", 
+        RowBox[{
+         RowBox[{"\<\"status\"\>", "\[Rule]", "\<\"ok\"\>"}], ",", 
+         RowBox[{"\<\"triplet\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{"\<\"ace\"\>", ",", "\<\"mms1\"\>", 
+            ",", "\<\"dscovr\"\>"}], "}"}]}], ",", 
+         RowBox[{"\<\"velocity_sat\"\>", "\[Rule]", "\<\"dscovr\"\>"}], ",", 
+         RowBox[{"\<\"velocity\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"-", "527.4000244140625`"}], ",", "59.29999923706055`", ",",
+             "39.79999923706055`"}], "}"}]}], ",", 
+         RowBox[{"\<\"normal\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{"0.31057112508893076`", ",", 
+            RowBox[{"-", "0.3646083820810318`"}], ",", 
+            "0.8778418445125797`"}], "}"}]}]}], "\[RightAssociation]"}]}], ",", 
+      RowBox[{"\<\"spherical\"\>", "\[Rule]", 
+       RowBox[{"\[LeftAssociation]", 
+        RowBox[{
+         RowBox[{"\<\"status\"\>", "\[Rule]", "\<\"ok\"\>"}], ",", 
+         RowBox[{"\<\"method\"\>", "\[Rule]", "\<\"fixed_radius_4sat\"\>"}], ",", 
+         RowBox[{"\<\"legacy_spherical_method\"\>", 
+          "\[Rule]", "\<\"parked_expanding_radius_nminimize\"\>"}], ",", 
+         RowBox[{"\<\"velocity_sat\"\>", "\[Rule]", "\<\"dscovr\"\>"}], ",", 
+         RowBox[{"\<\"reference_sat\"\>", "\[Rule]", "\<\"mms1\"\>"}], ",", 
+         RowBox[{"\<\"velocity\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"-", "527.4000244140625`"}], ",", "59.29999923706055`", ",",
+             "39.79999923706055`"}], "}"}]}], ",", 
+         RowBox[{"\<\"satellites\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           
+           RowBox[{"\<\"ace\"\>", ",", "\<\"wind\"\>", ",", "\<\"dscovr\"\>", 
+            ",", "\<\"mms1\"\>"}], "}"}]}], ",", 
+         RowBox[{"\<\"center\"\>", "\[Rule]", 
+          RowBox[{"{", 
+           RowBox[{"218.3305721009675`", ",", 
+            RowBox[{"-", "80.79441713504329`"}], ",", 
+            RowBox[{"-", "123.99972365686436`"}]}], "}"}]}], ",", 
+         RowBox[{"\<\"r0\"\>", "\[Rule]", "239.0482618430912`"}], ",", 
+         RowBox[{"\<\"sigma\"\>", "\[Rule]", "57144.071490203096`"}], ",", 
+         RowBox[{"\<\"normals\"\>", "\[Rule]", 
+          RowBox[{"\[LeftAssociation]", 
+           RowBox[{
+            RowBox[{"\<\"ace\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{
+              "0.9035787281479556`", ",", "0.24439623286953072`", ",", 
+               "0.35187492578713947`"}], "}"}]}], ",", 
+            RowBox[{"\<\"wind\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{"0.864366979123636`", ",", 
+               RowBox[{"-", "0.17857546987024123`"}], ",", 
+               "0.47008565917426404`"}], "}"}]}], ",", 
+            RowBox[{"\<\"dscovr\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{
+              "0.8171487316287173`", ",", "0.3730109062026808`", ",", 
+               "0.4394665109555378`"}], "}"}]}], ",", 
+            RowBox[{"\<\"mms1\"\>", "\[Rule]", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"-", "0.8114641428450523`"}], ",", 
+               "0.33714244856999476`", ",", "0.4773477917084909`"}], 
+              "}"}]}]}], "\[RightAssociation]"}]}]}], 
+        "\[RightAssociation]"}]}]}], "\[RightAssociation]"}]}]}], 
+  "\[RightAssociation]"}]], "Output",
+ CellChangeTimes->{3.981187864331175*^9, 3.981303711692152*^9, 
+  3.981441542802556*^9, 3.981442485151819*^9, 3.981444000245194*^9, 
+  3.9814451543520727`*^9, 3.9814470751200933`*^9, 3.981447322282876*^9},
+ CellLabel->
+  "Out[870]=",ExpressionUUID->"df916c96-60d9-4e2d-8dfc-a7a57039254d"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1280, 900},
+WindowMargins->{{Automatic, 0}, {Automatic, -37}},
+FrontEndVersion->"14.3 for Mac OS X ARM (64-bit) (July 8, 2025)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"3c8855ec-e4f9-465b-ab61-6a5dd6157e7c"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 113, 0, 96, "Title",ExpressionUUID->"2c3b011a-80f7-4449-9e68-794e3da8acbb"],
+Cell[692, 24, 316, 7, 121, "Text",ExpressionUUID->"2a934a31-24b6-4411-bcd8-fbe7f4419354"],
+Cell[1011, 33, 15597, 471, 6965, "Input",ExpressionUUID->"ba674989-7de0-4943-bbbe-ffe70995740c"],
+Cell[CellGroupData[{
+Cell[16633, 508, 484, 13, 185, "Input",ExpressionUUID->"cd3d968d-fa7a-42a9-8126-ed9ce9176840"],
+Cell[CellGroupData[{
+Cell[17142, 525, 367, 6, 23, "Print",ExpressionUUID->"cb9a0b08-3e1d-40af-af91-f97397340c61"],
+Cell[17512, 533, 426, 8, 23, "Print",ExpressionUUID->"e94423f8-7817-44a2-94bc-1709cad5659f"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[17987, 547, 224, 8, 98, "Input",ExpressionUUID->"7ae5cb36-7666-4162-9702-4480ad911b8c"],
+Cell[18214, 557, 7478, 154, 237, "Output",ExpressionUUID->"df916c96-60d9-4e2d-8dfc-a7a57039254d"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
