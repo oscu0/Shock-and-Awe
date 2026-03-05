@@ -23,12 +23,12 @@ Cell[CellGroupData[{
 Cell["Unified Shock Normals: Planar + Spherical", "Title",ExpressionUUID->"2c3b011a-80f7-4449-9e68-794e3da8acbb"],
 
 Cell["\<\
-This notebook reads Shocks/shock_params.json, loads each date folder \
+This notebook reads Shocks/Shock Params.json, loads each date folder \
 parquet files, and computes:
 1) planar (kinematic) normal
 2) spherical fixed-radius (4-satellite) normals
 
-Outputs are exported to Shocks/shock_normals_wolfram.json.\
+Outputs are exported to Shocks/Kinematic Shock Normals.json.\
 \>", "Text",ExpressionUUID->"2a934a31-24b6-4411-bcd8-fbe7f4419354"],
 
 Cell["\<\
@@ -50,7 +50,7 @@ auKm = 150.*10^6;
 auOverRe = auKm/reKm;
 
 repoRootCandidates = DeleteDuplicates@Cases[{
-  Quiet@Check[DirectoryName[DirectoryName[NotebookDirectory[]]], \
+  Quiet@Check[NotebookDirectory[], \
 Missing[\"NoFrontEndDir\"]],
   Quiet@Check[DirectoryName[DirectoryName[Directory[]]], \
 Missing[\"NoCwdDir\"]],
@@ -59,12 +59,12 @@ Missing[\"NoCwdDir\"]],
 
 repoRoot = SelectFirst[
   repoRootCandidates,
-  FileExistsQ[FileNameJoin[{#, \"Shocks\", \"shock_params.json\"}]] &,
+  FileExistsQ[FileNameJoin[{#, \"Shocks\", \"Shock Params.json\"}]] &,
   First[repoRootCandidates]
 ];
 
 shocksRoot = FileNameJoin[{repoRoot, \"Data\"}];
-shockParamsPath = FileNameJoin[{repoRoot, \"Shocks\", \"shock_params.json\"}];
+shockParamsPath = FileNameJoin[{repoRoot, \"Shocks\", \"Shock Params.json\"}];
 satBlacklist = {\"stereo\", \"themis_c\"};
 
 normalizeSatName[s_String] := ToLowerCase[StringReplace[s, {\"_\" -> \"\", \
@@ -514,7 +514,7 @@ If[allNormals === $Failed,
   Print[\"Computed dates: \" <> ToString[Length[Keys[allNormals]]]]
 ];
 
-outputPath = FileNameJoin[{repoRoot, \"Shocks\", \"shock_normals_wolfram.json\"}];
+outputPath = FileNameJoin[{repoRoot, \"Shocks\", \"Kinematic Shock Normals.json\"}];
 Export[outputPath, jsonReady[allNormals], \"RawJSON\"];
 Print[\"Exported: \" <> outputPath];\
 \>", "Input",
@@ -532,7 +532,7 @@ Cell[BoxData["\<\"Computed dates: 7\"\>"], "Print",
 In[862]:=",ExpressionUUID->"cb9a0b08-3e1d-40af-af91-f97397340c61"],
 
 Cell[BoxData["\<\"Exported: \
-/Users/aosh/Developer/ICME_list/Shocks/shock_normals_wolfram.json\"\>"], "Print",\
+/Users/aosh/Developer/ICME_list/Shocks/Kinematic Shock Normals.json\"\>"], "Print",\
 
  CellChangeTimes->{3.9811878642655907`*^9, 3.981303711650807*^9, 
   3.9814415427610493`*^9, 3.9814424851154613`*^9, 3.981444000122745*^9, 
