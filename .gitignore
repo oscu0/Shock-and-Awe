@@ -922,3 +922,7 @@ out/source/al.pkl
 analysis/Storm/Грант по бурям
 2024_CELIAS_Proton_Monior_30s.txt
 Icon*
+
+# Keep Data directory structure out of git
+Data/*
+!Data/.gitkeep
