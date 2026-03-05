@@ -3,8 +3,9 @@
 Minimal extracted workspace for storm-shock normal analysis.
 
 ## Contents
-- `Storm Analysis 3.ipynb`
-- `Storm Normals (Unified).nb`
+- `CDASWS Downloader.ipynb`
+- `Plots.ipynb`
+- `Kinematic Normals.nb`
 - `Data/` dated parquet folders
 - `Shocks/` JSON inputs/outputs
 - `requirements.txt`
