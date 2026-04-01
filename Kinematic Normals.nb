@@ -603,7 +603,7 @@ If[allNormals === $Failed,
 ];
 
 outputPath = FileNameJoin[{repoRoot, \"Shocks\", \"Kinematic Shock \
-Normals.json\"}];
+Normals (Wolfram).json\"}];
 Export[outputPath, jsonReady[allNormals], \"RawJSON\"];
 Print[\"Exported: \" <> outputPath];\
 \>", "Input",
@@ -984,4 +984,3 @@ Cell[28261, 833, 3152, 67, 176, "Output",ExpressionUUID->"cbaa24e8-1ff4-49dc-800
 *)
 
 (* End of internal cache information *)
-

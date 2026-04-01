@@ -25,6 +25,8 @@ DOWNLOADER_NOTEBOOK = REPO_ROOT / "CDASWS Downloader.ipynb"
 SYMPY_NOTEBOOK = REPO_ROOT / "SymPy Kinematic Models.ipynb"
 PLOTS_NOTEBOOK = REPO_ROOT / "Plots.ipynb"
 SHOCKS_DIR = REPO_ROOT / "Shocks"
+PYTHON_NORMALS_PATH = SHOCKS_DIR / "Kinematic Shock Normals.json"
+WOLFRAM_NORMALS_PATH = SHOCKS_DIR / "Kinematic Shock Normals (Wolfram).json"
 
 EVENT_SPECS: dict[str, dict[str, dict[str, Any]]] = {
     "2022-01-16 19-09-00": {
@@ -125,6 +127,8 @@ def _assert_event_parquets(data_root: Path, event: str) -> None:
 def generated_workspace(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("downloader-notebook-integration")
     _copy_repo_inputs(root)
+    assert (root / "Shocks" / PYTHON_NORMALS_PATH.name).exists()
+    assert (root / "Shocks" / WOLFRAM_NORMALS_PATH.name).exists()
 
     downloader_nb = root / DOWNLOADER_NOTEBOOK.name
     for event in EVENT_SPECS:
@@ -163,6 +167,8 @@ export_mx3_normals_for_events(EVENT_SPECS, output_path=Path("mx3_results.json"),
 def test_sympy_notebook_matches_wolfram(generated_workspace: Path) -> None:
     results_path = generated_workspace / "sympy_validation_results.json"
     assert results_path.exists(), "SymPy validation output was not produced"
+    assert (generated_workspace / "Shocks" / PYTHON_NORMALS_PATH.name).exists(), "Python kinematic normals export was not produced"
+    assert (generated_workspace / "Shocks" / WOLFRAM_NORMALS_PATH.name).exists(), "Wolfram kinematic normals baseline is missing"
 
     results = json.loads(results_path.read_text())
     planar_rows = results["planar"]
