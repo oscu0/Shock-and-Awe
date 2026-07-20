@@ -5,17 +5,6 @@
 
 (* CreatedBy='Wolfram 15.0' *)
 
-(*CacheID: 234*)
-(* Internal cache information:
-NotebookFileLineBreakTest
-NotebookFileLineBreakTest
-NotebookDataPosition[       154,          7]
-NotebookDataLength[     52398,       1375]
-NotebookOptionsPosition[     47680,       1292]
-NotebookOutlinePosition[     48070,       1308]
-CellTagsIndexPosition[     48027,       1305]
-WindowFrame->Normal*)
-
 (* Beginning of Notebook Content *)
 Notebook[{
 
@@ -657,6 +646,157 @@ Cell[BoxData[
 }, Open  ]]
 }, Open  ]],
 
+Cell[CellGroupData[{Cell["Interface", "Section",
+    ExpressionUUID -> "fa70cd3e-00a3-463f-b254-5b341defbd6c"],
+   Cell["Load the crossing catalogue and map five selected spacecraft, in \
+crossing order, into the symbolic solver variables.", "Text",
+    ExpressionUUID -> "8276d202-f16f-4f40-be85-8259418d7473"],
+   Cell[BoxData[RowBox[{RowBox[{"shockParamsPath", "=",
+         RowBox[{"FileNameJoin", "[", RowBox[{"{", RowBox[
+              {RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"Shocks\"",
+               ",", "\"Shock Params.json\""}], "}"}], "]"}]}], ";",
+       RowBox[{"shockParams", "=", RowBox[{"Import", "[",
+           RowBox[{"shockParamsPath", ",", "\"RawJSON\""}], "]"}]}], ";"}]],
+    "Input", ExpressionUUID -> "76b5af9a-9d8c-4d46-a4e1-4226a14b5be1"],
+   Cell[BoxData[RowBox[{RowBox[{"coordinateSymbols", "=",
+         RowBox[{"{", RowBox[{RowBox[{"{", RowBox[{"aX", ",", "aY", ",",
+                 "aZ"}], "}"}], ",", RowBox[{"{", RowBox[{"bX", ",", "bY",
+                 ",", "bZ"}], "}"}], ",", RowBox[{"{", RowBox[{"cX", ",",
+                 "cY", ",", "cZ"}], "}"}], ",", RowBox[{"{", RowBox[
+                {"dX", ",", "dY", ",", "dZ"}], "}"}], ",",
+             RowBox[{"{", RowBox[{"eX", ",", "eY", ",", "eZ"}], "}"}]}],
+           "}"}]}], ";", RowBox[{"relativeTimeSymbols", "=",
+         RowBox[{"{", RowBox[{"tAB", ",", "tAC", ",", "tAD", ",", "tAE"}],
+           "}"}]}], ";", RowBox[{"ClearAll", "[", "toSolverData", "]"}], ";",
+       RowBox[{StyleBox[RowBox[{"toSolverData", "::", "event"}],
+          "MessageName"], "=",
+         "\"Event `1` is not present in the shock catalogue.\""}], ";",
+       RowBox[{StyleBox[RowBox[{"toSolverData", "::", "selection"}],
+          "MessageName"], "=",
+         "\"Select exactly five distinct satellites in crossing order.\""}],
+       ";", RowBox[{StyleBox[RowBox[{"toSolverData", "::", "satellite"}],
+          "MessageName"], "=", "\"Event `1` has no record for: `2`.\""}],
+       ";", RowBox[{StyleBox[RowBox[{"toSolverData", "::", "position"}],
+          "MessageName"], "=", "\"Every selected satellite must have a \
+numeric three-component position.\""}], ";",
+       RowBox[{StyleBox[RowBox[{"toSolverData", "::", "frame"}],
+          "MessageName"], "=", "\"Every selected position must use Cartesian \
+GSE coordinates in R_E.\""}], ";",
+       RowBox[{StyleBox[RowBox[{"toSolverData", "::", "order"}],
+          "MessageName"], "=", "\"The selected satellites' crossing times \
+must be strictly increasing.\""}], ";",
+       RowBox[{StyleBox[RowBox[{"toSolverData", "::", "velocity"}],
+          "MessageName"], "=", "\"The propagation vector must be a nonzero \
+numeric three-vector.\""}], ";", RowBox[
+        {RowBox[{"toSolverData", "[", RowBox[{"eventKey_String", ",",
+             "satellites_List", ",", "velocityGSE_List"}], "]"}], ":=",
+         RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{"event", ",",
+                 "missingSatellites", ",", "entries", ",", "positionRecords",
+                 ",", "positions", ",", "crossingTimes", ",",
+                 "relativeTimes", ",", "direction"}], "}"}], ",",
+             RowBox[{RowBox[{"If", "[", RowBox[{RowBox[{"!", RowBox[
+                      {"KeyExistsQ", "[", RowBox[{"shockParams", ",",
+                         "eventKey"}], "]"}]}], ",", RowBox[{RowBox[
+                      {"Message", "[", RowBox[{StyleBox[RowBox[
+                          {"toSolverData", "::", "event"}], "MessageName"],
+                         ",", "eventKey"}], "]"}], ";", RowBox[{"Return",
+                       "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[
+                {"If", "[", RowBox[{RowBox[{RowBox[{RowBox[{"Length", "[",
+                         "satellites", "]"}], "\[NotEqual]", "5"}], "||",
+                     RowBox[{"!", RowBox[{"DuplicateFreeQ", "[",
+                         "satellites", "]"}]}]}], ",", RowBox[
+                    {RowBox[{"Message", "[", StyleBox[RowBox[{"toSolverData",
+                          "::", "selection"}], "MessageName"], "]"}], ";",
+                     RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";",
+               RowBox[{"event", "=", RowBox[{"Lookup", "[", RowBox[
+                    {"shockParams", ",", "eventKey"}], "]"}]}], ";", RowBox[
+                {"missingSatellites", "=", RowBox[{"Select", "[",
+                   RowBox[{"satellites", ",", RowBox[{RowBox[{"!", RowBox[
+                          {"KeyExistsQ", "[", RowBox[{"event", ",", "#1"}],
+                          "]"}]}], "&"}]}], "]"}]}], ";", RowBox[
+                {"If", "[", RowBox[{RowBox[{"missingSatellites", "=!=",
+                     RowBox[{"{", "}"}]}], ",", RowBox[{RowBox[{"Message",
+                       "[", RowBox[{StyleBox[RowBox[{"toSolverData", "::",
+                          "satellite"}], "MessageName"], ",", "eventKey",
+                         ",", "missingSatellites"}], "]"}], ";", RowBox[
+                      {"Return", "[", "$Failed", "]"}]}]}], "]"}], ";",
+               RowBox[{"entries", "=", RowBox[{"Lookup", "[", RowBox[
+                    {"event", ",", "satellites"}], "]"}]}], ";", RowBox[
+                {"positionRecords", "=", RowBox[{RowBox[{"(", RowBox[
+                      {RowBox[{"Lookup", "[", RowBox[{"#1", ",",
+                          "\"position\"", ",", RowBox[{"Missing", "[",
+                          "\"Position\"", "]"}]}], "]"}], "&"}], ")"}], "/@",
+                   "entries"}]}], ";", RowBox[{"If", "[", RowBox[
+                  {RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[
+                        {"positionRecords", ",", "AssociationQ"}], "]"}]}],
+                   ",", RowBox[{RowBox[{"Message", "[", StyleBox[RowBox[
+                         {"toSolverData", "::", "position"}], "MessageName"],
+                       "]"}], ";", RowBox[{"Return", "[", "$Failed",
+                       "]"}]}]}], "]"}], ";", RowBox[{"If", "[",
+                 RowBox[{RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[
+                        {"positionRecords", ",", RowBox[{RowBox[{RowBox[
+                          {RowBox[{"Lookup", "[", RowBox[{"#1", ",",
+                          "\"frame\"", ",", RowBox[{"Missing", "[",
+                          "\"Frame\"", "]"}]}], "]"}], "===", "\"GSE\""}],
+                          "&&", RowBox[{RowBox[{"Lookup", "[", RowBox[{"#1",
+                          ",", "\"units\"", ",", RowBox[{"Missing", "[",
+                          "\"Units\"", "]"}]}], "]"}], "===", "\"R_E\""}]}],
+                          "&"}]}], "]"}]}], ",", RowBox[{RowBox[{"Message",
+                       "[", StyleBox[RowBox[{"toSolverData", "::", "frame"}],
+                        "MessageName"], "]"}], ";", RowBox[{"Return", "[",
+                       "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"positions",
+                 "=", RowBox[{"N", "[", RowBox[{RowBox[{"(", RowBox[
+                        {RowBox[{"Lookup", "[", RowBox[{"#1", ",", RowBox[
+                          {"{", RowBox[{"\"x\"", ",", "\"y\"", ",",
+                          "\"z\""}], "}"}]}], "]"}], "&"}], ")"}], "/@",
+                     "positionRecords"}], "]"}]}], ";", RowBox[{"If", "[",
+                 RowBox[{RowBox[{RowBox[{RowBox[{"Dimensions", "[",
+                         "positions", "]"}], "=!=", RowBox[{"{", RowBox[
+                          {"5", ",", "3"}], "}"}]}], "||", RowBox[{"!",
+                       RowBox[{"MatrixQ", "[", RowBox[{"positions", ",",
+                          "NumericQ"}], "]"}]}]}], ",", RowBox[
+                    {RowBox[{"Message", "[", StyleBox[RowBox[{"toSolverData",
+                          "::", "position"}], "MessageName"], "]"}], ";",
+                     RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";",
+               RowBox[{"crossingTimes", "=", RowBox[{RowBox[{"(", RowBox[
+                      {RowBox[{"AbsoluteTime", "[", RowBox[{"DateObject",
+                          "[", RowBox[{RowBox[{"Lookup", "[", RowBox[{"#1",
+                          ",", "\"t0\""}], "]"}], ",", RowBox[{"TimeZone",
+                          "\[Rule]", "0"}]}], "]"}], "]"}], "&"}], ")"}],
+                   "/@", "entries"}]}], ";", RowBox[{"If", "[",
+                 RowBox[{RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[
+                        {RowBox[{"Differences", "[", "crossingTimes", "]"}],
+                         ",", RowBox[{RowBox[{"#1", ">", "0"}], "&"}]}],
+                       "]"}]}], ",", RowBox[{RowBox[{"Message", "[",
+                       StyleBox[RowBox[{"toSolverData", "::", "order"}],
+                        "MessageName"], "]"}], ";", RowBox[{"Return", "[",
+                       "$Failed", "]"}]}]}], "]"}], ";", RowBox[
+                {"relativeTimes", "=", RowBox[{"Round", "[", RowBox[
+                    {RowBox[{"N", "[", RowBox[{RowBox[{"Rest", "[",
+                          "crossingTimes", "]"}], "-", RowBox[{"First", "[",
+                          "crossingTimes", "]"}]}], "]"}], ",", FractionBox[
+                      "1", SuperscriptBox["10", "6"]]}], "]"}]}], ";", RowBox[
+                {"If", "[", RowBox[{RowBox[{RowBox[{"!", RowBox[{"VectorQ",
+                         "[", RowBox[{"velocityGSE", ",", "NumericQ"}],
+                         "]"}]}], "||", RowBox[{TemplateBox[{RowBox[{"N",
+                          "[", "velocityGSE", "]"}]}, "Norm"], "\[Equal]",
+                       "0"}]}], ",", RowBox[{RowBox[{"Message", "[",
+                       StyleBox[RowBox[{"toSolverData", "::", "velocity"}],
+                        "MessageName"], "]"}], ";", RowBox[{"Return", "[",
+                       "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"direction",
+                 "=", RowBox[{"Normalize", "[", RowBox[{"N", "[",
+                     "velocityGSE", "]"}], "]"}]}], ";", RowBox[{"Join", "[",
+                 RowBox[{RowBox[{"AssociationThread", "[", RowBox[
+                      {RowBox[{"Flatten", "[", "coordinateSymbols", "]"}],
+                       ",", RowBox[{"Flatten", "[", "positions", "]"}]}],
+                     "]"}], ",", RowBox[{"AssociationThread", "[", RowBox[
+                      {"relativeTimeSymbols", ",", "relativeTimes"}], "]"}],
+                   ",", RowBox[{"AssociationThread", "[", RowBox[
+                      {RowBox[{"{", RowBox[{"vXN", ",", "vYN", ",", "vZN"}],
+                         "}"}], ",", "direction"}], "]"}]}], "]"}]}]}],
+           "]"}]}], ";"}]], "Input", ExpressionUUID ->
+     "c49eefa1-4f12-4cf4-916b-be481eea443f"]}, Open]],
+
 Cell[CellGroupData[{
 
 Cell["Numerics", "Section",
@@ -1297,87 +1437,3 @@ StyleDefinitions->"Default.nb",
 ExpressionUUID->"041673f8-665c-4dd0-90ae-4c52e6880029"
 ]
 (* End of Notebook Content *)
-
-(* Internal cache information *)
-(*CellTagsOutline
-CellTagsIndex->{}
-*)
-(*CellTagsIndex
-CellTagsIndex->{}
-*)
-(*NotebookFileOutline
-Notebook[{
-Cell[CellGroupData[{
-Cell[576, 22, 150, 3, 66, "Section",ExpressionUUID->"ab72e6ff-32eb-4adc-896d-213ff2594803"],
-Cell[729, 27, 361, 7, 29, "Input",ExpressionUUID->"fac770d7-2f18-4f00-b14c-09db8f779e3f"],
-Cell[CellGroupData[{
-Cell[1115, 38, 341, 6, 29, "Input",ExpressionUUID->"4bd9434e-dbb1-4b37-b95a-69c1751cd355"],
-Cell[1459, 46, 256, 5, 33, "Output",ExpressionUUID->"1edc67f3-f62c-4662-b3d1-ab574930c869"]
-}, Open  ]],
-Cell[1730, 54, 857, 21, 151, "Input",ExpressionUUID->"4282852f-ba63-4500-b6e5-538d16809576"],
-Cell[2590, 77, 171, 2, 29, "Input",ExpressionUUID->"cfa8d9fd-490f-4d8b-bc65-9945d6c4c447"],
-Cell[2764, 81, 799, 20, 29, "Input",ExpressionUUID->"5feb36b6-2b07-4d76-bec2-41ff6431f445"],
-Cell[3566, 103, 738, 19, 29, "Input",ExpressionUUID->"dd4d6130-0d66-4806-b684-57d5a81be0c9"],
-Cell[4307, 124, 910, 22, 111, "Input",ExpressionUUID->"b6a15122-9f59-4b50-8536-862ebc34a68c"],
-Cell[CellGroupData[{
-Cell[5242, 150, 685, 17, 49, "Input",ExpressionUUID->"d0785d18-8cf5-4649-ab9c-1ca54440bf8b"],
-Cell[5930, 169, 712, 20, 33, "Output",ExpressionUUID->"59f2bcac-87e4-40fa-b799-d28a35564f70"]
-}, Open  ]]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[6691, 195, 161, 3, 66, "Section",ExpressionUUID->"c059fcbe-3960-4825-8afa-7faaa83929cc"],
-Cell[6855, 200, 617, 18, 49, "Input",ExpressionUUID->"052b8931-4448-4210-9559-3cfce303692b"],
-Cell[7475, 220, 807, 21, 70, "Input",ExpressionUUID->"13a1d122-1a1b-4166-a02f-3e4088fc816e"],
-Cell[8285, 243, 310, 9, 29, "Input",ExpressionUUID->"324057b9-4a6e-4bb8-b77e-6f5906ecb9a9"]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[8632, 257, 159, 3, 66, "Section",ExpressionUUID->"592eb1a8-4c80-4e45-a0bf-241820484d09"],
-Cell[CellGroupData[{
-Cell[8816, 264, 764, 18, 49, "Input",ExpressionUUID->"daa02ddd-201c-4858-81bc-5c1e752972b2"],
-Cell[9583, 284, 2604, 77, 119, "Output",ExpressionUUID->"abfa3644-bf57-42f7-95d2-cf209a53ba03"]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[12224, 366, 739, 22, 29, "Input",ExpressionUUID->"195f5a1c-bc8f-4d27-8491-2e7ed3e0668f"],
-Cell[12966, 390, 3512, 106, 180, "Output",ExpressionUUID->"bca03ee7-1764-4275-b099-29d58fa70a40"]
-}, Open  ]],
-Cell[16493, 499, 680, 17, 29, "Input",ExpressionUUID->"5d7fe3e5-f1ba-4db8-a41c-740aa92cffce"],
-Cell[17176, 518, 753, 22, 49, "Input",ExpressionUUID->"6c825ba2-64b5-4d0c-b842-1972534f9a93"],
-Cell[CellGroupData[{
-Cell[17954, 544, 495, 12, 29, "Input",ExpressionUUID->"dc5c3086-f4f6-464e-ae3e-df59ca3ede7b"],
-Cell[18452, 558, 4732, 97, 212, "Output",ExpressionUUID->"5b1ee84d-b881-4b75-9274-b6932adfddda"]
-}, Open  ]]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[23233, 661, 153, 3, 66, "Section",ExpressionUUID->"16c794d2-f086-45a1-8218-d38d2d8c8c45"],
-Cell[23389, 666, 1625, 37, 172, "Input",ExpressionUUID->"5af4847f-8546-4d82-842c-0395336e47a0"],
-Cell[CellGroupData[{
-Cell[25039, 707, 267, 6, 29, "Input",ExpressionUUID->"821ee90a-0cfe-4ba5-9cec-83f483cfb246"],
-Cell[25309, 715, 704, 18, 33, "Output",ExpressionUUID->"08e4340f-0035-4e0f-afee-0d1274c28a93"]
-}, Open  ]],
-Cell[26028, 736, 422, 12, 29, "Input",ExpressionUUID->"0925618e-2a86-4309-8ab2-c84b27b3af02"],
-Cell[26453, 750, 368, 10, 29, "Input",ExpressionUUID->"44e30567-cc76-4fb8-a923-34828bb736c4"],
-Cell[26824, 762, 614, 17, 49, "Input",ExpressionUUID->"5a5b9df9-7128-4788-91ad-ff60f364e976"],
-Cell[CellGroupData[{
-Cell[27463, 783, 1048, 29, 111, "Input",ExpressionUUID->"9f67b23c-3d59-47e2-a163-6be7619dd49c"],
-Cell[28514, 814, 4361, 99, 175, "Output",ExpressionUUID->"e801e8d9-7cd9-4aba-a560-3b9e7ec54ec0"]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[32912, 918, 104, 0, 53, "Subsection",ExpressionUUID->"4f4d5927-578b-4ab5-8aee-0724dd180cd8"],
-Cell[33019, 920, 245, 4, 55, "Text",ExpressionUUID->"991bf8c1-91ac-46e4-8fcc-7b4e5d310915"],
-Cell[33267, 926, 1711, 50, 172, "Input",ExpressionUUID->"b3df912f-1420-41f4-a2fc-78d488e7dafa"],
-Cell[34981, 978, 1626, 46, 172, "Input",ExpressionUUID->"bf1bea55-b008-46b9-97e1-10e6cc996c5c"],
-Cell[CellGroupData[{
-Cell[36632, 1028, 991, 20, 238, "Input",ExpressionUUID->"34419b31-6671-4ef3-9a9f-b56ed1b14cc0"],
-Cell[37626, 1050, 1189, 28, 187, "Output",ExpressionUUID->"31272008-65c1-4384-ad67-4d02e2e8ec66"]
-}, Open  ]]
-}, Open  ]],
-Cell[CellGroupData[{
-Cell[38864, 1084, 97, 0, 53, "Subsection",ExpressionUUID->"ae7e1e83-8090-41e3-83e4-fe3b98354da2"],
-Cell[38964, 1086, 360, 5, 77, "Text",ExpressionUUID->"41cca8d6-dbfd-4378-82ce-9855b82381b7"],
-Cell[39327, 1093, 8325, 195, 646, "Output",ExpressionUUID->"5d7c9f0e-8f29-4f49-8d3c-4c94eecc3e38"]
-}, Open  ]]
-}, Open  ]]
-}
-]
-*)
-
