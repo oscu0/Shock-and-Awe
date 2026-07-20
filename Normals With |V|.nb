@@ -1428,7 +1428,300 @@ Cell[BoxData[
          RowBox[{#2, ",", "Below"}], "]"}]}], "]"}]& )]], "Output",ExpressionU\
 UID->"5d7c9f0e-8f29-4f49-8d3c-4c94eecc3e38"]
 }, Open  ]]
-}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{Cell["Testing", "Section", ExpressionUUID ->
+     "9c3fad27-7859-4ca3-bae9-955b8d79ddec"], Cell["The planar solution uses \
+the first four crossings; the spherical solution uses all five. Normals are \
+oriented so that their dot product with the supplied propagation direction is \
+positive.", "Text", ExpressionUUID ->
+     "06e38834-caec-4bb3-a95f-58e2c144f634"],
+   Cell[BoxData[RowBox[{RowBox[{"earthRadiusKm", "=", "6378.`"}], ";",
+       RowBox[{"ClearAll", "[", "solvePlanarShock", "]"}], ";",
+       RowBox[{StyleBox[RowBox[{"solvePlanarShock", "::", "degenerate"}],
+          "MessageName"], "=",
+         "\"The first four crossings do not define a unique moving plane.\""}]\
+, ";", RowBox[{StyleBox[RowBox[{"solvePlanarShock", "::", "direction"}],
+          "MessageName"], "=", "\"The plane solution moves opposite to the \
+supplied propagation direction.\""}], ";",
+       RowBox[{RowBox[{"solvePlanarShock", "[", "data_Association", "]"}],
+         ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[
+                {"positions", ",", "times", ",", "direction", ",",
+                 "displacements", ",", "denominator", ",", "speed", ",",
+                 "correctedDisplacements", ",", "normal", ",", "residuals"}],
+               "}"}], ",", RowBox[{RowBox[{"positions", "=", RowBox[
+                  {"Partition", "[", RowBox[{RowBox[{"Lookup", "[", RowBox[
+                        {"data", ",", RowBox[{"Flatten", "[",
+                          "coordinateSymbols", "]"}]}], "]"}], ",", "3"}],
+                   "]"}]}], ";", RowBox[{"times", "=", RowBox[{"Prepend",
+                   "[", RowBox[{RowBox[{"Lookup", "[", RowBox[{"data", ",",
+                         "relativeTimeSymbols"}], "]"}], ",", "0.`"}],
+                   "]"}]}], ";", RowBox[{"direction", "=", RowBox[{"Lookup",
+                   "[", RowBox[{"data", ",", RowBox[{"{", RowBox[{"vXN", ",",
+                         "vYN", ",", "vZN"}], "}"}]}], "]"}]}], ";", RowBox[
+                {"displacements", "=", RowBox[{RowBox[{"(", RowBox[
+                      {RowBox[{"#1", "-", RowBox[{"First", "[", "positions",
+                          "]"}]}], "&"}], ")"}], "/@", RowBox[{"positions",
+                     "\[LeftDoubleBracket]", RowBox[{"2", ";;", "4"}],
+                     "\[RightDoubleBracket]"}]}]}], ";", RowBox[
+                {"denominator", "=", RowBox[{UnderoverscriptBox["\[Sum]",
+                    "i", "3"], RowBox[{RowBox[{"times",
+                       "\[LeftDoubleBracket]", RowBox[{"i", "+", "1"}],
+                       "\[RightDoubleBracket]"}], " ", RowBox[{"Det", "[",
+                       RowBox[{"ReplacePart", "[", RowBox[{"displacements",
+                          ",", RowBox[{"i", "\[Rule]", "direction"}]}],
+                         "]"}], "]"}]}]}]}], ";", RowBox[{"If", "[",
+                 RowBox[{RowBox[{RowBox[{"Abs", "[", "denominator", "]"}],
+                     "<", FractionBox["1", SuperscriptBox["10", "12"]]}],
+                   ",", RowBox[{RowBox[{"Message", "[", StyleBox[RowBox[
+                         {"solvePlanarShock", "::", "degenerate"}],
+                        "MessageName"], "]"}], ";", RowBox[{"Return", "[",
+                       "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"speed",
+                 "=", FractionBox[RowBox[{"Det", "[", "displacements", "]"}],
+                  "denominator"]}], ";", RowBox[{"If", "[", RowBox[
+                  {RowBox[{"speed", "\[LessEqual]", "0"}], ",", RowBox[
+                    {RowBox[{"Message", "[", StyleBox[RowBox[
+                         {"solvePlanarShock", "::", "direction"}],
+                        "MessageName"], "]"}], ";", RowBox[{"Return", "[",
+                       "$Failed", "]"}]}]}], "]"}], ";", RowBox[
+                {"correctedDisplacements", "=", RowBox[{"MapThread", "[",
+                   RowBox[{RowBox[{RowBox[{"#1", "-", RowBox[{"speed", " ",
+                          "#2", " ", "direction"}]}], "&"}], ",", RowBox[
+                      {"{", RowBox[{"displacements", ",", RowBox[{"times",
+                          "\[LeftDoubleBracket]", RowBox[{"2", ";;", "4"}],
+                          "\[RightDoubleBracket]"}]}], "}"}]}], "]"}]}], ";",
+               RowBox[{"normal", "=", RowBox[{"Normalize", "[", RowBox[
+                    {RowBox[{"correctedDisplacements",
+                       "\[LeftDoubleBracket]", "1",
+                       "\[RightDoubleBracket]"}], "\[Cross]", RowBox[
+                      {"correctedDisplacements", "\[LeftDoubleBracket]", "2",
+                       "\[RightDoubleBracket]"}]}], "]"}]}], ";", RowBox[
+                {"If", "[", RowBox[{RowBox[{RowBox[{"normal", ".",
+                       "direction"}], "<", "0"}], ",", RowBox[{"normal", "=",
+                     RowBox[{"-", "normal"}]}]}], "]"}], ";", RowBox[
+                {"residuals", "=", RowBox[{"Abs", "[", RowBox[
+                    {"correctedDisplacements", ".", "normal"}], "]"}]}], ";",
+               RowBox[{"Association", "[", RowBox[{RowBox[
+                    {"\"speedREPerSecond\"", "\[Rule]", RowBox[{"N", "[",
+                       "speed", "]"}]}], ",", RowBox[{"\"speedKmPerSecond\"",
+                     "\[Rule]", RowBox[{"N", "[", RowBox[{"earthRadiusKm",
+                         " ", "speed"}], "]"}]}], ",", RowBox[
+                    {"\"normalGSE\"", "\[Rule]", RowBox[{"N", "[", "normal",
+                       "]"}]}], ",", RowBox[{"\"planeOffsetRE\"", "\[Rule]",
+                     RowBox[{"N", "[", RowBox[{"normal", ".", RowBox[
+                          {"First", "[", "positions", "]"}]}], "]"}]}], ",",
+                   RowBox[{"\"maxResidualRE\"", "\[Rule]", RowBox[{"N", "[",
+                       RowBox[{"Max", "[", "residuals", "]"}], "]"}]}]}],
+                 "]"}]}]}], "]"}]}], ";", RowBox[{"ClearAll", "[",
+         "solveSphericalShock", "]"}], ";",
+       RowBox[{StyleBox[RowBox[{"solveSphericalShock", "::", "branch"}],
+          "MessageName"], "=",
+         "\"Expected one positive real spherical solution; found `1`.\""}],
+       ";", RowBox[{RowBox[{"solveSphericalShock", "[", "data_Association",
+           "]"}], ":=", RowBox[{"Module", "[",
+           RowBox[{RowBox[{"{", RowBox[{"positions", ",", "times", ",",
+                 "direction", ",", "centerX", ",", "centerY", ",", "centerZ",
+                 ",", "centerVector", ",", "speed", ",", "speedValue", ",",
+                 "equations", ",", "solutions", ",", "physicalSolutions",
+                 ",", "solution", ",", "centerValue", ",", "sigma", ",",
+                 "normal", ",", "residuals"}], "}"}], ",",
+             RowBox[{RowBox[{"positions", "=", RowBox[{"Partition", "[",
+                   RowBox[{RowBox[{"Lookup", "[", RowBox[{"data", ",",
+                         RowBox[{"Flatten", "[", "coordinateSymbols",
+                          "]"}]}], "]"}], ",", "3"}], "]"}]}], ";", RowBox[
+                {"times", "=", RowBox[{"Prepend", "[", RowBox[
+                    {RowBox[{"Lookup", "[", RowBox[{"data", ",",
+                         "relativeTimeSymbols"}], "]"}], ",", "0.`"}],
+                   "]"}]}], ";", RowBox[{"direction", "=", RowBox[{"Lookup",
+                   "[", RowBox[{"data", ",", RowBox[{"{", RowBox[{"vXN", ",",
+                         "vYN", ",", "vZN"}], "}"}]}], "]"}]}], ";", RowBox[
+                {"centerVector", "=", RowBox[{"{", RowBox[{"centerX", ",",
+                     "centerY", ",", "centerZ"}], "}"}]}], ";", RowBox[
+                {"equations", "=", RowBox[{"Table", "[", RowBox[
+                    {RowBox[{RowBox[{"Total", "[", SuperscriptBox[RowBox[
+                          {"(", RowBox[{RowBox[{"positions",
+                          "\[LeftDoubleBracket]", "i",
+                          "\[RightDoubleBracket]"}], "-", "centerVector",
+                          "-", RowBox[{"speed", " ", RowBox[{"times",
+                          "\[LeftDoubleBracket]", "i",
+                          "\[RightDoubleBracket]"}], " ", "direction"}]}],
+                          ")"}], "2"], "]"}], "\[Equal]", RowBox[{"Total",
+                         "[", SuperscriptBox[RowBox[{"(", RowBox[{RowBox[
+                          {"First", "[", "positions", "]"}], "-",
+                          "centerVector"}], ")"}], "2"], "]"}]}], ",",
+                     RowBox[{"{", RowBox[{"i", ",", "2", ",", "5"}], "}"}]}],
+                   "]"}]}], ";", RowBox[{"solutions", "=", RowBox[{"NSolve",
+                   "[", RowBox[{"equations", ",", RowBox[{"{", RowBox[
+                        {"centerX", ",", "centerY", ",", "centerZ", ",",
+                         "speed"}], "}"}], ",", TemplateBox[{}, "Reals"]}],
+                   "]"}]}], ";", RowBox[{"physicalSolutions", "=",
+                 RowBox[{"Select", "[", RowBox[{"solutions", ",", RowBox[
+                      {RowBox[{"TrueQ", "[", RowBox[{RowBox[{"(", RowBox[
+                          {"speed", "/.", "\[VeryThinSpace]", "#1"}], ")"}],
+                          ">", "0"}], "]"}], "&"}]}], "]"}]}], ";", RowBox[
+                {"If", "[", RowBox[{RowBox[{RowBox[{"Length", "[",
+                       "physicalSolutions", "]"}], "=!=", "1"}], ",",
+                   RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[
+                          {"solveSphericalShock", "::", "branch"}],
+                          "MessageName"], ",", RowBox[{"Length", "[",
+                          "physicalSolutions", "]"}]}], "]"}], ";",
+                     RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";",
+               RowBox[{"solution", "=", RowBox[{"First", "[",
+                   "physicalSolutions", "]"}]}], ";", RowBox[{"centerValue",
+                 "=", RowBox[{"N", "[", RowBox[{"centerVector", "/.",
+                     "\[VeryThinSpace]", "solution"}], "]"}]}], ";", RowBox[
+                {"speedValue", "=", RowBox[{"N", "[", RowBox[{"speed", "/.",
+                     "\[VeryThinSpace]", "solution"}], "]"}]}], ";", RowBox[
+                {"sigma", "=", RowBox[{"N", "[", RowBox[{"Total", "[",
+                     SuperscriptBox[RowBox[{"(", RowBox[{RowBox[{"First",
+                          "[", "positions", "]"}], "-", "centerValue"}],
+                        ")"}], "2"], "]"}], "]"}]}], ";", RowBox[
+                {"normal", "=", RowBox[{"Normalize", "[", RowBox[
+                    {RowBox[{"First", "[", "positions", "]"}], "-",
+                     "centerValue"}], "]"}]}], ";", RowBox[{"If", "[",
+                 RowBox[{RowBox[{RowBox[{"normal", ".", "direction"}], "<",
+                     "0"}], ",", RowBox[{"normal", "=", RowBox[{"-",
+                       "normal"}]}]}], "]"}], ";", RowBox[{"residuals", "=",
+                 RowBox[{"Abs", "[", RowBox[{"Table", "[", RowBox[
+                      {RowBox[{RowBox[{"Total", "[", SuperscriptBox[RowBox[
+                          {"(", RowBox[{RowBox[{"positions",
+                          "\[LeftDoubleBracket]", "i",
+                          "\[RightDoubleBracket]"}], "-", "centerValue", "-",
+                          RowBox[{"speedValue", " ", RowBox[{"times",
+                          "\[LeftDoubleBracket]", "i",
+                          "\[RightDoubleBracket]"}], " ", "direction"}]}],
+                          ")"}], "2"], "]"}], "-", "sigma"}], ",", RowBox[
+                        {"{", RowBox[{"i", ",", "5"}], "}"}]}], "]"}],
+                   "]"}]}], ";", RowBox[{"Association", "[", RowBox[
+                  {RowBox[{"\"speedREPerSecond\"", "\[Rule]", "speedValue"}],
+                   ",", RowBox[{"\"speedKmPerSecond\"", "\[Rule]", RowBox[
+                      {"N", "[", RowBox[{"earthRadiusKm", " ",
+                         "speedValue"}], "]"}]}], ",", RowBox[
+                    {"\"centerAtReferenceRE\"", "\[Rule]", "centerValue"}],
+                   ",", RowBox[{"\"sigmaRE2\"", "\[Rule]", "sigma"}], ",",
+                   RowBox[{"\"radiusRE\"", "\[Rule]", RowBox[{"N", "[",
+                       SqrtBox["sigma"], "]"}]}], ",", RowBox[
+                    {"\"normalGSE\"", "\[Rule]", RowBox[{"N", "[", "normal",
+                       "]"}]}], ",", RowBox[
+                    {"\"maxSquaredDistanceResidualRE2\"", "\[Rule]",
+                     RowBox[{"N", "[", RowBox[{"Max", "[", "residuals",
+                         "]"}], "]"}]}]}], "]"}]}]}], "]"}]}], ";"}]],
+    "Input", ExpressionUUID -> "f218ee33-8ab7-40e9-964f-3e4544e6660a"],
+   Cell[BoxData[RowBox[{RowBox[{"eventSpecifications", "=",
+         RowBox[{"Association", "[", RowBox[
+            {RowBox[{"\"2021-11-03 19-32-00\"", "\[Rule]", RowBox[
+                {"Association", "[", RowBox[{RowBox[{"\"satellites\"",
+                     "\[Rule]", RowBox[{"{", RowBox[{"\"ace\"", ",",
+                         "\"dscovr\"", ",", "\"wind\"", ",", "\"themis_b\"",
+                         ",", "\"mms1\""}], "}"}]}], ",", RowBox[
+                    {"\"velocityGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                        {RowBox[{"-", "505.20001220703125`"}], ",", "7.`",
+                         ",", "24.200000762939453`"}], "}"}]}]}], "]"}]}],
+             ",", RowBox[{"\"2024-05-10 16-36-00\"", "\[Rule]", RowBox[
+                {"Association", "[", RowBox[{RowBox[{"\"satellites\"",
+                     "\[Rule]", RowBox[{"{", RowBox[{"\"dscovr\"", ",",
+                         "\"ace\"", ",", "\"wind\"", ",", "\"themis-b\"",
+                         ",", "\"mms1\""}], "}"}]}], ",", RowBox[
+                    {"\"velocityGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                        {RowBox[{"-", "516.2000122070312`"}], ",", RowBox[
+                          {"-", "4.400000095367432`"}], ",",
+                         "9.100000381469727`"}], "}"}]}]}], "]"}]}]}],
+           "]"}]}], ";", RowBox[{"testData", "=",
+         RowBox[{"AssociationMap", "[", RowBox[
+            {RowBox[{RowBox[{"toSolverData", "[", RowBox[{"#1", ",",
+                   RowBox[{RowBox[{"eventSpecifications", "[", "#1", "]"}],
+                     "[", "\"satellites\"", "]"}], ",", RowBox[
+                    {RowBox[{"eventSpecifications", "[", "#1", "]"}], "[",
+                     "\"velocityGSE\"", "]"}]}], "]"}], "&"}], ",",
+             RowBox[{"Keys", "[", "eventSpecifications", "]"}]}], "]"}]}],
+       ";"}]], "Input", ExpressionUUID ->
+     "c2036530-f0e2-4f2c-b37a-d37de2934aae"],
+   Cell[CellGroupData[
+     {Cell[BoxData[RowBox[{RowBox[{"testResults", "=",
+            RowBox[{"AssociationMap", "[", RowBox[{RowBox[
+                 {RowBox[{"Association", "[", RowBox[{RowBox[{"\"planar\"",
+                        "\[Rule]", RowBox[{"solvePlanarShock", "[", RowBox[
+                          {"testData", "[", "#1", "]"}], "]"}]}], ",",
+                      RowBox[{"\"spherical\"", "\[Rule]", RowBox[
+                         {"solveSphericalShock", "[", RowBox[{"testData",
+                          "[", "#1", "]"}], "]"}]}]}], "]"}], "&"}], ",",
+                RowBox[{"Keys", "[", "testData", "]"}]}], "]"}]}], ";",
+          "testResults"}]], "Input", ExpressionUUID ->
+        "07a4a88a-ce8c-4c97-b1d7-da7cdeb9aa4b"],
+      Cell[BoxData[RowBox[{"\[LeftAssociation]",
+          RowBox[{RowBox[{"\"2021-11-03 19-32-00\"", "\[Rule]",
+              RowBox[{"\[LeftAssociation]", RowBox[{RowBox[{"\"planar\"",
+                    "\[Rule]", RowBox[{"\[LeftAssociation]", RowBox[
+                       {RowBox[{"\"speedREPerSecond\"", "\[Rule]",
+                          "0.204299737845378`"}], ",", RowBox[
+                         {"\"speedKmPerSecond\"", "\[Rule]",
+                          "1303.023727977821`"}], ",", RowBox[
+                         {"\"normalGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                          {RowBox[{"-", "0.39727045680920553`"}], ",",
+                          "0.25652693620881956`", ",", RowBox[{"-",
+                          "0.8811186725668237`"}]}], "}"}]}], ",", RowBox[
+                         {"\"planeOffsetRE\"", "\[Rule]", RowBox[{"-",
+                          "112.99985414559242`"}]}], ",", RowBox[
+                         {"\"maxResidualRE\"", "\[Rule]",
+                          "6.559823241154182`*^-15"}]}],
+                      "\[RightAssociation]"}]}], ",", RowBox[
+                   {"\"spherical\"", "\[Rule]", RowBox[{"\[LeftAssociation]",
+                      RowBox[{RowBox[{"\"speedREPerSecond\"", "\[Rule]",
+                          "0.21104969128092196`"}], ",", RowBox[
+                         {"\"speedKmPerSecond\"", "\[Rule]",
+                          "1346.0749309897203`"}], ",", RowBox[
+                         {"\"centerAtReferenceRE\"", "\[Rule]", RowBox[
+                          {"{", RowBox[{RowBox[{"-", "75.35555807665824`"}],
+                          ",", "226.53712608228844`", ",", RowBox[{"-",
+                          "829.3106353871749`"}]}], "}"}]}], ",", RowBox[
+                         {"\"sigmaRE2\"", "\[Rule]", "873471.6820876838`"}],
+                        ",", RowBox[{"\"radiusRE\"", "\[Rule]",
+                          "934.5970693767897`"}], ",", RowBox[
+                         {"\"normalGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                          {RowBox[{"-", "0.3276667651758208`"}], ",",
+                          "0.2851566316299278`", ",", RowBox[{"-",
+                          "0.9007331383027312`"}]}], "}"}]}], ",", RowBox[
+                         {"\"maxSquaredDistanceResidualRE2\"", "\[Rule]",
+                          "5.704350769519806`*^-9"}]}],
+                      "\[RightAssociation]"}]}]}], "\[RightAssociation]"}]}],
+            ",", RowBox[{"\"2024-05-10 16-36-00\"", "\[Rule]",
+              RowBox[{"\[LeftAssociation]", RowBox[{RowBox[{"\"planar\"",
+                    "\[Rule]", RowBox[{"\[LeftAssociation]", RowBox[
+                       {RowBox[{"\"speedREPerSecond\"", "\[Rule]",
+                          "0.1289841683439614`"}], ",", RowBox[
+                         {"\"speedKmPerSecond\"", "\[Rule]",
+                          "822.6610256977858`"}], ",", RowBox[
+                         {"\"normalGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                          {RowBox[{"-", "0.8945624875096189`"}], ",", RowBox[
+                          {"-", "0.1530121540701899`"}], ",", RowBox[{"-",
+                          "0.4199348004719348`"}]}], "}"}]}], ",", RowBox[
+                         {"\"planeOffsetRE\"", "\[Rule]", RowBox[{"-",
+                          "223.00625765570936`"}]}], ",", RowBox[
+                         {"\"maxResidualRE\"", "\[Rule]",
+                          "3.982430424836943`*^-14"}]}],
+                      "\[RightAssociation]"}]}], ",", RowBox[
+                   {"\"spherical\"", "\[Rule]", RowBox[{"\[LeftAssociation]",
+                      RowBox[{RowBox[{"\"speedREPerSecond\"", "\[Rule]",
+                          "0.09380893746186429`"}], ",", RowBox[
+                         {"\"speedKmPerSecond\"", "\[Rule]",
+                          "598.3134031317704`"}], ",", RowBox[
+                         {"\"centerAtReferenceRE\"", "\[Rule]", RowBox[
+                          {"{", RowBox[{"286.6683023039993`", ",",
+                          "13.186041616993469`", ",", RowBox[{"-",
+                          "166.6835530099883`"}]}], "}"}]}], ",", RowBox[
+                         {"\"sigmaRE2\"", "\[Rule]", "38501.516750797884`"}],
+                        ",", RowBox[{"\"radiusRE\"", "\[Rule]",
+                          "196.21803370434097`"}], ",", RowBox[
+                         {"\"normalGSE\"", "\[Rule]", RowBox[{"{", RowBox[
+                          {RowBox[{"-", "0.2146585778219713`"}], ",", RowBox[
+                          {"-", "0.2114456389632597`"}], ",",
+                          "0.9535263167479265`"}], "}"}]}], ",", RowBox[
+                         {"\"maxSquaredDistanceResidualRE2\"", "\[Rule]",
+                          "2.6338966563344`*^-9"}]}],
+                      "\[RightAssociation]"}]}]}],
+                "\[RightAssociation]"}]}]}], "\[RightAssociation]"}]],
+       "Output", ExpressionUUID -> "6bdb74da-4bd5-4dcb-8c66-0c816e36c653"]},
+     Open]]}, Open]]
 },
 WindowSize->{692, 897},
 WindowMargins->{{Automatic, 0}, {9, Automatic}},
