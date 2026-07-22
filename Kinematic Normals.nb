@@ -35,7 +35,7 @@ Cell["1) Setup", "Section",ExpressionUUID->"061943a5-730d-4a7d-9cb9-3946cf6a4b27
 Cell["\<\
 ClearAll[
   reKm, auKm, auOverRe, repoRootCandidates, repoRoot, shocksRoot, \
-shockParamsPath, satBlacklist,
+  shockParamsPath, satBlacklist, mmsSatelliteNames,
   normalizeSatName, parseDateValue, pickFirstNumeric, convertPositionUnits,
   extractPositionFromRow, extractVelocityFromRow, toAssocRows, \
 extractTimestamps,
@@ -50,6 +50,7 @@ reKm = 6371.;
 auKm = 150.*10^6;
 auOverRe = auKm/reKm;
 satBlacklist = {\"stereo\", \"themisc\"};
+mmsSatelliteNames = {\"mms1\", \"mms2\", \"mms3\", \"mms4\"};
 
 repoRootCandidates = DeleteDuplicates@Cases[{
   Quiet@Check[NotebookDirectory[], Missing[\"NoFrontEndDir\"]],
@@ -394,44 +395,58 @@ extractPositionFromRow[rowPos]];
  CellLabel->"In[50]:=",ExpressionUUID->"9f8f46be-07df-45bb-89b7-cadfc215e4b7"],
 
 Cell["\<\
-choosePlanarSatTriplet[dateData_Association] := Module[{valid, \
-preferredTriplets},
+choosePlanarSatTriplet[dateData_Association] := Module[{valid, validMap, \
+mmsCandidates, preferredTriplets, choice},
   valid = Select[Keys[dateData],
     KeyExistsQ[dateData[#], \"position\"] && \
 VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
 \", Missing[]]] === DateObject &
   ];
+  validMap = AssociationThread[normalizeSatName /@ valid, valid];
+  mmsCandidates = Select[mmsSatelliteNames, KeyExistsQ[validMap, #] &];
 
-  preferredTriplets = {
+  preferredTriplets = Join[{
     {\"ace\", \"wind\", \"dscovr\"},
-    {\"ace\", \"wind\", \"mms1\"},
     {\"ace\", \"wind\", \"themis-b\"},
     {\"ace\", \"wind\", \"themis-c\"},
-    {\"ace\", \"mms1\", \"wind\"},
     {\"wind\", \"themis-b\", \"themis-c\"}
-  };
+  }, ({\"ace\", \"wind\", #} & /@ mmsCandidates)];
 
-  SelectFirst[preferredTriplets, SubsetQ[valid, #] &, If[Length[valid] >= 3, \
-Take[valid, 3], Missing[\"NoTriplet\"]]]
+  choice = SelectFirst[
+    preferredTriplets,
+    AllTrue[#, KeyExistsQ[validMap, #] &] &,
+    Missing[\"NoTriplet\"]
+  ];
+  If[MissingQ[choice], If[Length[valid] >= 3, Take[valid, 3], choice], \
+Lookup[validMap, choice]]
 ];
 
-chooseSphericalSatQuad[dateData_Association] := Module[{valid, preferredQuads},
+chooseSphericalSatQuad[dateData_Association] := Module[{valid, validMap, \
+mmsCandidates, preferredQuads, choice},
   valid = Select[Keys[dateData],
     KeyExistsQ[dateData[#], \"position\"] && \
 VectorQ[dateData[#][\"position\"], NumericQ] && Head[Lookup[dateData[#], \"t0\
 \", Missing[]]] === DateObject &
   ];
+  validMap = AssociationThread[normalizeSatName /@ valid, valid];
+  mmsCandidates = Select[mmsSatelliteNames, KeyExistsQ[validMap, #] &];
 
-  preferredQuads = {
-    {\"ace\", \"wind\", \"dscovr\", \"mms1\"},
-    {\"ace\", \"mms1\", \"dscovr\", \"themis-b\"},
+  preferredQuads = Join[
+    ({\"ace\", \"wind\", \"dscovr\", #} & /@ mmsCandidates),
+    ({\"ace\", #, \"dscovr\", \"themis-b\"} & /@ mmsCandidates),
+    {
     {\"dscovr\", \"ace\", \"wind\", \"themis-b\"},
-    {\"ace\", \"wind\", \"dscovr\", \"mms1\"},
     {\"ace\", \"wind\", \"dscovr\", \"soho\"}
-  };
+    }
+  ];
 
-  SelectFirst[preferredQuads, SubsetQ[valid, #] &, If[Length[valid] >= 4, \
-Take[valid, 4], Missing[\"NoQuad\"]]]
+  choice = SelectFirst[
+    preferredQuads,
+    AllTrue[#, KeyExistsQ[validMap, #] &] &,
+    Missing[\"NoQuad\"]
+  ];
+  If[MissingQ[choice], If[Length[valid] >= 4, Take[valid, 4], choice], \
+Lookup[validMap, choice]]
 ];
 
 chooseVelocityVector[dateData_Association, preferred_ : {\"dscovr\", \
