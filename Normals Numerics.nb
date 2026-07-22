@@ -1,1 +1,1170 @@
-Notebook[{Cell["Normals Numerics", "Title"], Cell["Choose a shock from the catalogue, check the fixed spacecraft inputs, then explicitly run the normal fits. Selecting an event does not start a solve.", "Text"], Cell[CellGroupData[{Cell["Load Solver", "Section"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", "loadNormalsSolver", "]"}], ";", RowBox[{RowBox[{"loadNormalsSolver", "[", "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{"solverPath", ",", "heldNotebook", ",", "initializationBoxes"}], "}"}], ",", RowBox[{RowBox[{"solverPath", "=", RowBox[{"FileNameJoin", "[", RowBox[{"{", RowBox[{RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"Normals Solver.nb\""}], "}"}], "]"}]}], ";", RowBox[{"heldNotebook", "=", RowBox[{"ToExpression", "[", RowBox[{RowBox[{"Import", "[", RowBox[{"solverPath", ",", "\"Text\""}], "]"}], ",", "InputForm", ",", "HoldComplete"}], "]"}]}], ";", RowBox[{"initializationBoxes", "=", RowBox[{"Cases", "[", RowBox[{"heldNotebook", ",", RowBox[{RowBox[{"HoldPattern", "[", RowBox[{"Cell", "[", RowBox[{RowBox[{"BoxData", "[", "boxes_", "]"}], ",", "\"Input\"", ",", "___", ",", RowBox[{"InitializationCell", "", "True"}], ",", "___"}], "]"}], "]"}], "", "boxes"}], ",", "∞"}], "]"}]}], ";", RowBox[{"Scan", "[", RowBox[{RowBox[{RowBox[{"ToExpression", "[", RowBox[{"#1", ",", "StandardForm"}], "]"}], "&"}], ",", "initializationBoxes"}], "]"}], ";"}]}], "]"}]}], ";", RowBox[{"loadNormalsSolver", "[", "]"}], ";"}]], "Input"]}, Open]], Cell[CellGroupData[{Cell["Load Catalogue", "Section"], Cell[BoxData[RowBox[{RowBox[{"shockParamsPath", "=", RowBox[{"FileNameJoin", "[", RowBox[{"{", RowBox[{RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"Shocks\"", ",", "\"Shock Params.json\""}], "}"}], "]"}]}], ";", RowBox[{"shockParams", "=", RowBox[{"Import", "[", RowBox[{"shockParamsPath", ",", "\"RawJSON\""}], "]"}]}], ";"}]], "Input"]}, Open]], Cell[CellGroupData[{Cell["Fixed Spacecraft Sets", "Section"], Cell["The plane fit always uses ACE, DSCOVR, THEMIS-B, and MMS. The spherical fit always adds Wind. Other catalogue spacecraft are not considered.", "Text"], Cell[BoxData[RowBox[{RowBox[{"eventKeys", "=", RowBox[{"Sort", "[", RowBox[{"Select", "[", RowBox[{RowBox[{"Keys", "[", "shockParams", "]"}], ",", "StringQ"}], "]"}], "]"}]}], ";", RowBox[{"planeSatellites", "=", RowBox[{"{", RowBox[{"\"ace\"", ",", "\"dscovr\"", ",", "\"themis_b\"", ",", "\"mms1\""}], "}"}]}], ";", RowBox[{"sphericalSatellites", "=", RowBox[{"{", RowBox[{"\"ace\"", ",", "\"wind\"", ",", "\"dscovr\"", ",", "\"themis_b\"", ",", "\"mms1\""}], "}"}]}], ";", RowBox[{"satelliteLabels", "=", RowBox[{"Association", "[", RowBox[{RowBox[{"\"ace\"", "", "\"ACE\""}], ",", RowBox[{"\"wind\"", "", "\"Wind\""}], ",", RowBox[{"\"dscovr\"", "", "\"DSCOVR\""}], ",", RowBox[{"\"themis_b\"", "", "\"THEMIS-B\""}], ",", RowBox[{"\"mms1\"", "", "\"MMS\""}]}], "]"}]}], ";"}]], "Input"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", "satelliteNames", "]"}], ";", RowBox[{RowBox[{"satelliteNames", "[", "satellites_List", "]"}], ":=", RowBox[{RowBox[{"(", RowBox[{RowBox[{"Lookup", "[", RowBox[{"satelliteLabels", ",", "#1", ",", "#1"}], "]"}], "&"}], ")"}], "/@", "satellites"}]}], ";"}]], "Input"]}, Open]], Cell[CellGroupData[{Cell["Build Parameters", "Section"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", "propagationDirectionVector", "]"}], ";", RowBox[{StyleBox[RowBox[{"propagationDirectionVector", "::", "velocity"}], "MessageName"], "=", "\"Event `1` does not have a usable DSCOVR upstream velocity in GSE km/s.\""}], ";", RowBox[{RowBox[{"propagationDirectionVector", "[", "eventKey_String", "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{"velocityRecord", ",", "velocity"}], "}"}], ",", RowBox[{RowBox[{"velocityRecord", "=", RowBox[{"Lookup", "[", RowBox[{RowBox[{"Lookup", "[", RowBox[{RowBox[{"shockParams", "[", "eventKey", "]"}], ",", "\"dscovr\"", ",", RowBox[{"Association", "[", "]"}]}], "]"}], ",", "\"velocity_upstream\"", ",", RowBox[{"Missing", "[", "\"velocity_upstream\"", "]"}]}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{"!", RowBox[{"AssociationQ", "[", "velocityRecord", "]"}]}], "||", RowBox[{RowBox[{"Lookup", "[", RowBox[{"velocityRecord", ",", "\"frame\"", ",", RowBox[{"Missing", "[", "\"frame\"", "]"}]}], "]"}], "=!=", "\"GSE\""}], "||", RowBox[{RowBox[{"Lookup", "[", RowBox[{"velocityRecord", ",", "\"units\"", ",", RowBox[{"Missing", "[", "\"units\"", "]"}]}], "]"}], "=!=", "\"km/s\""}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"propagationDirectionVector", "::", "velocity"}], "MessageName"], ",", "eventKey"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"velocity", "=", RowBox[{"N", "[", RowBox[{"Lookup", "[", RowBox[{"velocityRecord", ",", RowBox[{"{", RowBox[{"\"x\"", ",", "\"y\"", ",", "\"z\""}], "}"}]}], "]"}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{RowBox[{"Length", "[", "velocity", "]"}], "=!=", "3"}], "||", RowBox[{"!", RowBox[{"VectorQ", "[", RowBox[{"velocity", ",", "NumericQ"}], "]"}]}], "||", RowBox[{TemplateBox[{"velocity"}, "Norm"], "", "0"}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"propagationDirectionVector", "::", "velocity"}], "MessageName"], ",", "eventKey"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "velocity"}]}], "]"}]}], ";"}]], "Input"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", "modelParameters", "]"}], ";", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "position"}], "MessageName"], "=", "\"Event `1` has no usable GSE/R_E position for the `2` fit.\""}], ";", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "time"}], "MessageName"], "=", "\"Event `1` has missing, invalid, or duplicate crossing times for the `2` fit.\""}], ";", RowBox[{RowBox[{"modelParameters", "[", RowBox[{"eventKey_String", ",", "modelName_String", ",", "satelliteSet_List", ",", "direction_List"}], "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{"event", ",", "entries", ",", "positionRecords", ",", "positions", ",", "rawTimes", ",", "crossingTimes", ",", "ordering", ",", "relativeTimes"}], "}"}], ",", RowBox[{RowBox[{"event", "=", RowBox[{"shockParams", "[", "eventKey", "]"}]}], ";", RowBox[{"entries", "=", RowBox[{"Lookup", "[", RowBox[{"event", ",", "satelliteSet"}], "]"}]}], ";", RowBox[{"positionRecords", "=", RowBox[{"Lookup", "[", RowBox[{"entries", ",", "\"position\"", ",", RowBox[{"Missing", "[", "\"position\"", "]"}]}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[{"positionRecords", ",", "AssociationQ"}], "]"}]}], "||", RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[{"positionRecords", ",", RowBox[{RowBox[{RowBox[{RowBox[{"Lookup", "[", RowBox[{"#1", ",", "\"frame\"", ",", RowBox[{"Missing", "[", "\"frame\"", "]"}]}], "]"}], "===", "\"GSE\""}], "&&", RowBox[{RowBox[{"Lookup", "[", RowBox[{"#1", ",", "\"units\"", ",", RowBox[{"Missing", "[", "\"units\"", "]"}]}], "]"}], "===", "\"R_E\""}]}], "&"}]}], "]"}]}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "position"}], "MessageName"], ",", "eventKey", ",", "modelName"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"positions", "=", RowBox[{"N", "[", RowBox[{RowBox[{"(", RowBox[{RowBox[{"Lookup", "[", RowBox[{"#1", ",", RowBox[{"{", RowBox[{"\"x\"", ",", "\"y\"", ",", "\"z\""}], "}"}]}], "]"}], "&"}], ")"}], "/@", "positionRecords"}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{RowBox[{"Dimensions", "[", "positions", "]"}], "=!=", RowBox[{"{", RowBox[{RowBox[{"Length", "[", "satelliteSet", "]"}], ",", "3"}], "}"}]}], "||", RowBox[{"!", RowBox[{"MatrixQ", "[", RowBox[{"positions", ",", "NumericQ"}], "]"}]}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "position"}], "MessageName"], ",", "eventKey", ",", "modelName"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"rawTimes", "=", RowBox[{"Lookup", "[", RowBox[{"entries", ",", "\"t0\"", ",", RowBox[{"Missing", "[", "\"t0\"", "]"}]}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[{"rawTimes", ",", "StringQ"}], "]"}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "time"}], "MessageName"], ",", "eventKey", ",", "modelName"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"crossingTimes", "=", RowBox[{RowBox[{"(", RowBox[{RowBox[{"AbsoluteTime", "[", RowBox[{"DateObject", "[", RowBox[{"#1", ",", RowBox[{"TimeZone", "", "0"}]}], "]"}], "]"}], "&"}], ")"}], "/@", "rawTimes"}]}], ";", RowBox[{"ordering", "=", RowBox[{"Ordering", "[", "crossingTimes", "]"}]}], ";", RowBox[{"crossingTimes", "=", RowBox[{"crossingTimes", "〚", "ordering", "〛"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{"!", RowBox[{"AllTrue", "[", RowBox[{RowBox[{"Differences", "[", "crossingTimes", "]"}], ",", RowBox[{RowBox[{"#1", ">", "0"}], "&"}]}], "]"}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"modelParameters", "::", "time"}], "MessageName"], ",", "eventKey", ",", "modelName"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"relativeTimes", "=", RowBox[{"Round", "[", RowBox[{RowBox[{"N", "[", RowBox[{RowBox[{"Rest", "[", "crossingTimes", "]"}], "-", RowBox[{"First", "[", "crossingTimes", "]"}]}], "]"}], ",", FractionBox["1", SuperscriptBox["10", "6"]]}], "]"}]}], ";", RowBox[{"Association", "[", RowBox[{RowBox[{"\"event\"", "", "eventKey"}], ",", RowBox[{"\"model\"", "", "modelName"}], ",", RowBox[{"\"satellites\"", "", RowBox[{"satelliteSet", "〚", "ordering", "〛"}]}], ",", RowBox[{"\"positionsRE\"", "", RowBox[{"positions", "〚", "ordering", "〛"}]}], ",", RowBox[{"\"relativeTimesSeconds\"", "", "relativeTimes"}], ",", RowBox[{"\"propagationDirectionGSE\"", "", RowBox[{"Normalize", "[", RowBox[{"N", "[", "direction", "]"}], "]"}]}]}], "]"}]}]}], "]"}]}], ";"}]], "Input"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", "eventParameters", "]"}], ";", RowBox[{StyleBox[RowBox[{"eventParameters", "::", "event"}], "MessageName"], "=", "\"Event `1` is not present in the shock catalogue.\""}], ";", RowBox[{StyleBox[RowBox[{"eventParameters", "::", "satellites"}], "MessageName"], "=", "\"Event `1` does not have enough spacecraft for the fixed normal fits. Plane requires ACE, DSCOVR, THEMIS-B, MMS; spherical requires ACE, Wind, DSCOVR, THEMIS-B, MMS. Missing plane: `2`. Missing spherical: `3`.\""}], ";", RowBox[{RowBox[{"eventParameters", "[", "eventKey_String", "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{"event", ",", "missingPlane", ",", "missingSpherical", ",", "direction", ",", "planar", ",", "spherical"}], "}"}], ",", RowBox[{RowBox[{"If", "[", RowBox[{RowBox[{"!", RowBox[{"KeyExistsQ", "[", RowBox[{"shockParams", ",", "eventKey"}], "]"}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"eventParameters", "::", "event"}], "MessageName"], ",", "eventKey"}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"event", "=", RowBox[{"shockParams", "[", "eventKey", "]"}]}], ";", RowBox[{"missingPlane", "=", RowBox[{"Complement", "[", RowBox[{"planeSatellites", ",", RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", RowBox[{"missingSpherical", "=", RowBox[{"Complement", "[", RowBox[{"sphericalSatellites", ",", RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{"missingPlane", "=!=", RowBox[{"{", "}"}]}], "||", RowBox[{"missingSpherical", "=!=", RowBox[{"{", "}"}]}]}], ",", RowBox[{RowBox[{"Message", "[", RowBox[{StyleBox[RowBox[{"eventParameters", "::", "satellites"}], "MessageName"], ",", "eventKey", ",", RowBox[{"satelliteNames", "[", "missingPlane", "]"}], ",", RowBox[{"satelliteNames", "[", "missingSpherical", "]"}]}], "]"}], ";", RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", RowBox[{"direction", "=", RowBox[{"propagationDirectionVector", "[", "eventKey", "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{"direction", "===", "$Failed"}], ",", RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", RowBox[{"planar", "=", RowBox[{"modelParameters", "[", RowBox[{"eventKey", ",", "\"planar\"", ",", "planeSatellites", ",", "direction"}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{"planar", "===", "$Failed"}], ",", RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", RowBox[{"spherical", "=", RowBox[{"modelParameters", "[", RowBox[{"eventKey", ",", "\"spherical\"", ",", "sphericalSatellites", ",", "direction"}], "]"}]}], ";", RowBox[{"If", "[", RowBox[{RowBox[{"spherical", "===", "$Failed"}], ",", RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", RowBox[{"Association", "[", RowBox[{RowBox[{"\"planar\"", "", "planar"}], ",", RowBox[{"\"spherical\"", "", "spherical"}]}], "]"}]}]}], "]"}]}], ";"}]], "Input"]}, Open]], Cell[CellGroupData[{Cell["Display", "Section"], Cell[BoxData[RowBox[{RowBox[{"ClearAll", "[", RowBox[{"eventInputSummary", ",", "eventResultSummary"}], "]"}], ";", RowBox[{RowBox[{"eventInputSummary", "[", "parameters_Association", "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{RowBox[{"planar", "=", RowBox[{"parameters", "[", "\"planar\"", "]"}]}], ",", RowBox[{"spherical", "=", RowBox[{"parameters", "[", "\"spherical\"", "]"}]}]}], "}"}], ",", TagBox[GridBox[{{StyleBox["\"Event\"", FontWeight -> Bold, StripOnInput -> False], RowBox[{"planar", "[", "\"event\"", "]"}]}, {StyleBox["\"Plane crossings\"", FontWeight -> Bold, StripOnInput -> False], RowBox[{"StringRiffle", "[", RowBox[{RowBox[{"satelliteNames", "[", RowBox[{"planar", "[", "\"satellites\"", "]"}], "]"}], ",", "\" -> \""}], "]"}]}, {StyleBox["\"Spherical crossings\"", FontWeight -> Bold, StripOnInput -> False], RowBox[{"StringRiffle", "[", RowBox[{RowBox[{"satelliteNames", "[", RowBox[{"spherical", "[", "\"satellites\"", "]"}], "]"}], ",", "\" -> \""}], "]"}]}, {StyleBox["\"Propagation direction (GSE)\"", FontWeight -> Bold, StripOnInput -> False], RowBox[{"planar", "[", "\"propagationDirectionGSE\"", "]"}]}}, GridBoxAlignment -> {"Columns" -> {{Left}}}, AutoDelete -> False, GridBoxFrame -> {"Columns" -> {{True}}, "Rows" -> {{True}}}, GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, GridBoxSpacings -> {"Columns" -> {{1}}, "Rows" -> {{0.8}}}], "Grid"]}], "]"}]}], ";", RowBox[{RowBox[{"eventResultSummary", "[", RowBox[{"parameters_Association", ",", "result_Association"}], "]"}], ":=", RowBox[{"Module", "[", RowBox[{RowBox[{"{", RowBox[{RowBox[{"planar", "=", RowBox[{"parameters", "[", "\"planar\"", "]"}]}], ",", RowBox[{"spherical", "=", RowBox[{"parameters", "[", "\"spherical\"", "]"}]}], ",", RowBox[{"planarResult", "=", RowBox[{"result", "[", "\"planar\"", "]"}]}], ",", RowBox[{"sphericalResult", "=", RowBox[{"result", "[", "\"spherical\"", "]"}]}], ",", "summary"}], "}"}], ",", RowBox[{RowBox[{"If", "[", RowBox[{RowBox[{RowBox[{"!", RowBox[{"AssociationQ", "[", "planarResult", "]"}]}], "||", RowBox[{"!", RowBox[{"AssociationQ", "[", "sphericalResult", "]"}]}]}], ",", RowBox[{"Return", "[", RowBox[{"Style", "[", RowBox[{"\"The selected solve did not return both normal solutions; see the messages above.\"", ",", RowBox[{"Darker", "[", "Red", "]"}]}], "]"}], "]"}]}], "]"}], ";", RowBox[{"summary", "=", TagBox[GridBox[{{StyleBox["\"Model\"", FontWeight -> Bold, StripOnInput -> False], StyleBox["\"Crossings\"", FontWeight -> Bold, StripOnInput -> False], StyleBox["\"Speed (R_E/s)\"", FontWeight -> Bold, StripOnInput -> False], StyleBox["\"Speed (km/s)\"", FontWeight -> Bold, StripOnInput -> False], StyleBox["\"Normal (GSE)\"", FontWeight -> Bold, StripOnInput -> False]}, {"\"4-satellite plane\"", RowBox[{"StringRiffle", "[", RowBox[{RowBox[{"satelliteNames", "[", RowBox[{"planar", "[", "\"satellites\"", "]"}], "]"}], ",", "\" -> \""}], "]"}], RowBox[{"planarResult", "[", "\"speedREPerSecond\"", "]"}], RowBox[{"planarResult", "[", "\"speedKmPerSecond\"", "]"}], RowBox[{"planarResult", "[", "\"normalGSE\"", "]"}]}, {"\"5-satellite sphere\"", RowBox[{"StringRiffle", "[", RowBox[{RowBox[{"satelliteNames", "[", RowBox[{"spherical", "[", "\"satellites\"", "]"}], "]"}], ",", "\" -> \""}], "]"}], RowBox[{"sphericalResult", "[", "\"speedREPerSecond\"", "]"}], RowBox[{"sphericalResult", "[", "\"speedKmPerSecond\"", "]"}], RowBox[{"sphericalResult", "[", "\"normalGSE\"", "]"}]}}, GridBoxAlignment -> {"Columns" -> {{Left}}}, AutoDelete -> False, GridBoxFrame -> {"Columns" -> {{True}}, "Rows" -> {{True}}}, GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, GridBoxSpacings -> {"Columns" -> {{1}}, "Rows" -> {{0.8}}}], "Grid"]}], ";", TagBox[GridBox[{{"summary"}, {RowBox[{"Dataset", "[", RowBox[{"Association", "[", RowBox[{RowBox[{"\"4-satellite plane\"", "", "planarResult"}], ",", RowBox[{"\"5-satellite sphere\"", "", "sphericalResult"}]}], "]"}], "]"}]}}, GridBoxAlignment -> {"Columns" -> {{Left}}}, DefaultBaseStyle -> "Column", GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{1.5}}}], "Column"]}]}], "]"}]}], ";"}]], "Input"], Cell[BoxData[RowBox[{"If", "[", RowBox[{RowBox[{"eventKeys", "===", RowBox[{"{", "}"}]}], ",", RowBox[{"Style", "[", RowBox[{"\"No shock events were found in Shocks/Shock Params.json.\"", ",", RowBox[{"Darker", "[", "Red", "]"}]}], "]"}], ",", DynamicModuleBox[{selectedEvent$$ = "", selectedParameters$$ = Missing["NotLoaded"], selectedResult$$ = Missing["NotSolved"]}, TagBox[GridBox[{{TagBox[GridBox[{{StyleBox["\"Event\"", FontWeight -> Bold, StripOnInput -> False], RowBox[{"PopupMenu", "[", RowBox[{DynamicBox[ToBoxes[selectedEvent$$, StandardForm], (selectedEvent$$ = #1; selectedParameters$$ = eventParameters[#1]; selectedResult$$ = Missing["NotSolved"]) & ], ",", "eventKeys"}], "]"}]}}, GridBoxAlignment -> {"Columns" -> {{Left}}}, AutoDelete -> False, GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}], "Grid"]}, {DynamicBox[ToBoxes[If[AssociationQ[selectedParameters$$], eventInputSummary[selectedParameters$$], Style["The selected event cannot supply the fixed normal fits; see the message above.", Darker[Red]]], StandardForm]]}, {ButtonBox["\"Solve selected event\"", ButtonFunction :> (selectedResult$$ = solveShockNormals[selectedParameters$$]), Enabled -> Dynamic[AssociationQ[selectedParameters$$]], Method -> "Queued", Appearance -> Automatic, Evaluator -> Automatic]}, {DynamicBox[ToBoxes[Which[AssociationQ[selectedResult$$], eventResultSummary[selectedParameters$$, selectedResult$$], selectedResult$$ === Missing["NotSolved"], Style["Select Solve selected event to calculate normals and speeds.", Gray], True, Style["The selected solve failed; see the messages above.", Darker[Red]]], StandardForm]]}}, GridBoxAlignment -> {"Columns" -> {{Left}}}, DefaultBaseStyle -> "Column", GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}, GridBoxSpacings -> {"Columns" -> {{Automatic}}, "Rows" -> {{1.5}}}], "Column"], Initialization :> (selectedEvent$$ = First[eventKeys]; selectedParameters$$ = eventParameters[selectedEvent$$]), DynamicModuleValues -> Automatic]}], "]"}]], "Input"]}, Open]]}, WindowSize -> {900, 800}, StyleDefinitions -> "Default.nb"]
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     56724,       1336]
+NotebookOptionsPosition[     54206,       1286]
+NotebookOutlinePosition[     54601,       1302]
+CellTagsIndexPosition[     54558,       1299]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Normals Numerics", "Title",ExpressionUUID->"d3410f31-fb32-47d9-8088-84bd6d88920a"],
+
+Cell["\<\
+Choose a shock from the catalogue, inspect the fixed chronological spacecraft \
+inputs, then explicitly solve and write both fits. Selecting an event does \
+not run either solver.\
+\>", "Text",ExpressionUUID->"9acd418c-7924-410e-82a6-312d81011e3a"],
+
+Cell[CellGroupData[{
+
+Cell["Load Solver", "Section",ExpressionUUID->"38c62929-d52e-430c-b386-669222d96526"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "loadNormalsSolver", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"loadNormalsSolver", "[", "]"}], " ", ":=", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "solverPath", ",", " ", "heldNotebook", ",", " ",
+       "initializationBoxes"}], "}"}], ",", "\n", " ",
+     RowBox[{
+      RowBox[{"solverPath", " ", "=", " ",
+       RowBox[{"FileNameJoin", "[",
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"NotebookDirectory", "[", "]"}], ",",
+          " ", "\"\<Normals Solver.nb\>\""}], "}"}], "]"}]}], ";", "\n", " ",
+
+      RowBox[{"heldNotebook", " ", "=", " ",
+       RowBox[{"ToExpression", "[",
+        RowBox[{
+         RowBox[{"Import", "[",
+          RowBox[{"solverPath", ",", " ", "\"\<Text\>\""}], "]"}], ",", " ",
+         "InputForm", ",", " ", "HoldComplete"}], "]"}]}], ";", "\n", " ",
+      RowBox[{"initializationBoxes", " ", "=", " ",
+       RowBox[{"Cases", "[",
+        RowBox[{"heldNotebook", ",", "\n", "   ",
+         RowBox[{
+          RowBox[{"HoldPattern", "[",
+           RowBox[{
+            RowBox[{"Cell", "[",
+             RowBox[{
+              RowBox[{"BoxData", "[", "boxes_", "]"}], ",",
+              " ", "\"\<Input\>\"", ",", " ", "options___"}], "]"}], " ", "/;",
+             "\n", "      ",
+            RowBox[{"MemberQ", "[",
+             RowBox[{
+              RowBox[{"{", "options", "}"}], ",", " ",
+              RowBox[{"InitializationCell", " ", "->", " ", "True"}]}],
+             "]"}]}], "]"}], " ", ":>", " ", "boxes"}], ",", " ",
+         "Infinity"}], "]"}]}], ";", "\n", " ",
+      RowBox[{"Scan", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"ToExpression", "[",
+          RowBox[{"#", ",", " ", "StandardForm"}], "]"}], " ", "&"}], ",",
+        " ", "initializationBoxes"}], "]"}]}]}], "\n", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"loadNormalsSolver", "[", "]"}], ";"}]}], "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Load Catalogue", "Section",ExpressionUUID->"e7bfc0a9-0d90-474c-b9e5-e2b04f036e51"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"shockParamsPath", " ", "=", " ",
+   RowBox[{"FileNameJoin", "[",
+    RowBox[{"{",
+     RowBox[{
+      RowBox[{"NotebookDirectory", "[", "]"}], ",", " ", "\"\<Shocks\>\"", ",",
+       " ", "\"\<Shock Params.json\>\""}], "}"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"shockNormalsPath", " ", "=", " ",
+   RowBox[{"FileNameJoin", "[",
+    RowBox[{"{",
+     RowBox[{
+      RowBox[{"NotebookDirectory", "[", "]"}], ",", " ", "\"\<Shocks\>\"", ",",
+       " ", "\"\<Kinematic Shock Normals (Wolfram).json\>\""}], "}"}],
+    "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"shockParams", " ", "=", " ",
+   RowBox[{"Import", "[",
+    RowBox[{"shockParamsPath", ",", " ", "\"\<RawJSON\>\""}], "]"}]}],
+  ";"}]}], "Input",
+ CellLabel->"In[4]:=",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Fixed Spacecraft Sets", "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
+
+Cell["\<\
+The plane fit uses ACE, Wind, DSCOVR, and THEMIS-B. The sphere adds MMS. Each \
+set is sorted by crossing time before solving; THEMIS-C and STEREO are never \
+considered.\
+\>", "Text",ExpressionUUID->"82bf79d9-c1d1-4461-bd28-aa470c183292"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"eventKeys", " ", "=", " ",
+   RowBox[{"Sort", "@",
+    RowBox[{"Select", "[",
+     RowBox[{
+      RowBox[{"Keys", "[", "shockParams", "]"}], ",", " ", "StringQ"}],
+     "]"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"planeSatellites", " ", "=", " ",
+   RowBox[{"{",
+    RowBox[{"\"\<ace\>\"", ",", " ", "\"\<wind\>\"", ",",
+     " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\""}], "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"sphericalSatellites", " ", "=", " ",
+   RowBox[{"{",
+    RowBox[{"\"\<ace\>\"", ",", " ", "\"\<wind\>\"", ",",
+     " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\"", ",",
+     " ", "\"\<mms1\>\""}], "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+  "propagationDirectionSource", " ", "=", " ", "\"\<UpstreamVelocity\>\""}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"satelliteLabels", " ", "=", " ",
+   RowBox[{"<|",
+    RowBox[{
+     RowBox[{"\"\<ace\>\"", " ", "->", " ", "\"\<ACE\>\""}], ",", " ",
+     RowBox[{"\"\<wind\>\"", " ", "->", " ", "\"\<Wind\>\""}], ",", " ",
+     RowBox[{"\"\<dscovr\>\"", " ", "->", " ", "\"\<DSCOVR\>\""}], ",", "\n",
+     " ",
+     RowBox[{"\"\<themis_b\>\"", " ", "->", " ", "\"\<THEMIS-B\>\""}], ",",
+     " ",
+     RowBox[{"\"\<mms1\>\"", " ", "->", " ", "\"\<MMS\>\""}]}], "|>"}]}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{"ClearAll", "[", "satelliteNames", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"satelliteNames", "[", "satellites_List", "]"}], " ", ":=", " ",
+   RowBox[{
+    RowBox[{"(",
+     RowBox[{
+      RowBox[{"Lookup", "[",
+       RowBox[{"satelliteLabels", ",", " ", "#", ",", " ", "#"}], "]"}], " ",
+      "&"}], ")"}], " ", "/@", " ", "satellites"}]}], ";"}]}], "Input",
+ CellLabel->"In[7]:=",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Build Parameters", "Section",ExpressionUUID->"6a6dd5d7-3622-4dca-b6b7-49c205773616"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "propagationDirectionVector", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"propagationDirectionVector", "::", "velocity"}], " ", "=",
+   " ", "\"\<Event `1` does not have a usable DSCOVR upstream velocity in GSE \
+km/s.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"propagationDirectionVector", "::", "source"}], " ", "=",
+   " ", "\"\<Unknown propagation-direction source: `1`.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"propagationDirectionVector", "[", "eventKey_String", "]"}], " ", ":=",
+    " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{"velocityRecord", ",", " ", "velocity"}], "}"}], ",", "\n", " ",
+     RowBox[{
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+        "propagationDirectionSource", " ", "===", " ", "\"\<SunRadial\>\""}],
+        ",", " ",
+        RowBox[{"Return", "[",
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"-", "1."}], ",", " ", "0.", ",", " ", "0."}], "}"}],
+         "]"}]}], "]"}], ";", "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+        "propagationDirectionSource", " ", "=!=",
+         " ", "\"\<UpstreamVelocity\>\""}], ",", "\n", "  ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"propagationDirectionVector", "::", "source"}], ",", " ",
+           "propagationDirectionSource"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
+      RowBox[{"velocityRecord", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{
+         RowBox[{"Lookup", "[",
+          RowBox[{
+           RowBox[{"shockParams", "[", "eventKey", "]"}], ",",
+           " ", "\"\<dscovr\>\"", ",", " ",
+           RowBox[{"<|", "|>"}]}], "]"}], ",", "\n",
+         "   ", "\"\<velocity_upstream\>\"", ",", " ",
+         RowBox[{"Missing", "[", "\"\<velocity_upstream\>\"", "]"}]}],
+        "]"}]}], ";", "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"!", " ",
+          RowBox[{"AssociationQ", "[", "velocityRecord", "]"}]}], " ", "||",
+         " ",
+         RowBox[{
+          RowBox[{"Lookup", "[",
+           RowBox[{"velocityRecord", ",", " ", "\"\<frame\>\"", ",", " ",
+            RowBox[{"Missing", "[", "\"\<frame\>\"", "]"}]}], "]"}], " ", "=!=",
+           " ", "\"\<GSE\>\""}], " ", "||", "\n", "   ",
+         RowBox[{
+          RowBox[{"Lookup", "[",
+           RowBox[{"velocityRecord", ",", " ", "\"\<units\>\"", ",", " ",
+            RowBox[{"Missing", "[", "\"\<units\>\"", "]"}]}], "]"}], " ", "=!=",
+           " ", "\"\<km/s\>\""}]}], ",", "\n", "  ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"propagationDirectionVector", "::", "velocity"}], ",", " ",
+            "eventKey"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
+      RowBox[{"velocity", " ", "=", " ",
+       RowBox[{"N", "[",
+        RowBox[{"Lookup", "[",
+         RowBox[{"velocityRecord", ",", " ",
+          RowBox[{"{",
+
+           RowBox[{"\"\<x\>\"", ",", " ", "\"\<y\>\"", ",",
+            " ", "\"\<z\>\""}], "}"}]}], "]"}], "]"}]}], ";", "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{"Length", "[", "velocity", "]"}], " ", "=!=", " ", "3"}],
+         " ", "||", " ",
+         RowBox[{"!", " ",
+          RowBox[{"VectorQ", "[",
+           RowBox[{"velocity", ",", " ", "NumericQ"}], "]"}]}], " ", "||",
+         " ",
+         RowBox[{
+          RowBox[{"Norm", "[", "velocity", "]"}], " ", "==", " ", "0"}]}], ",",
+         "\n", "  ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"propagationDirectionVector", "::", "velocity"}], ",", " ",
+            "eventKey"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
+      "velocity"}]}], "\n", "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[14]:=",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "modelParameters", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"modelParameters", "::", "position"}], " ", "=",
+   " ", "\"\<Event `1` has no usable GSE/R_E position for the `2` fit.\>\""}],
+   ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"modelParameters", "::", "time"}], " ", "=",
+   " ", "\"\<Event `1` has missing, invalid, or duplicate crossing times for \
+the `2` fit.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"modelParameters", "[",
+    RowBox[{
+    "eventKey_String", ",", " ", "modelName_String", ",", " ",
+     "satelliteSet_List", ",", " ", "direction_List"}], "]"}], " ", ":=",
+   "\n", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "event", ",", " ", "entries", ",", " ", "positionRecords", ",", " ",
+       "positions", ",", " ", "rawTimes", ",", " ", "crossingTimes", ",", " ",
+        "ordering", ",", " ", "relativeTimes"}], "}"}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"event", " ", "=", " ",
+       RowBox[{"shockParams", "[", "eventKey", "]"}]}], ";", "\n", "  ",
+      RowBox[{"entries", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{"event", ",", " ", "satelliteSet"}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"positionRecords", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{"entries", ",", " ", "\"\<position\>\"", ",", " ",
+         RowBox[{"Missing", "[", "\"\<position\>\"", "]"}]}], "]"}]}], ";",
+      "\n", "  ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"!", " ",
+          RowBox[{"AllTrue", "[",
+           RowBox[{"positionRecords", ",", " ", "AssociationQ"}], "]"}]}],
+         " ", "||", "\n", "    ",
+         RowBox[{"!", " ",
+          RowBox[{"AllTrue", "[",
+           RowBox[{"positionRecords", ",", " ",
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"Lookup", "[",
+                RowBox[{"#", ",", " ", "\"\<frame\>\"", ",", " ",
+                 RowBox[{"Missing", "[", "\"\<frame\>\"", "]"}]}], "]"}], " ",
+                "===", " ", "\"\<GSE\>\""}], " ", "&&", "\n", "      ",
+              RowBox[{
+               RowBox[{"Lookup", "[",
+                RowBox[{"#", ",", " ", "\"\<units\>\"", ",", " ",
+                 RowBox[{"Missing", "[", "\"\<units\>\"", "]"}]}], "]"}], " ",
+                "===", " ", "\"\<R_E\>\""}]}], " ", "&"}]}], "]"}]}]}], ",",
+        "\n", "   ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"modelParameters", "::", "position"}], ",", " ",
+           "eventKey", ",", " ", "modelName"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"positions", " ", "=", " ",
+       RowBox[{"N", "[",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"Lookup", "[",
+            RowBox[{"#", ",", " ",
+             RowBox[{"{",
+
+              RowBox[{"\"\<x\>\"", ",", " ", "\"\<y\>\"", ",",
+               " ", "\"\<z\>\""}], "}"}]}], "]"}], " ", "&"}], ")"}], " ", "/@",
+          " ", "positionRecords"}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{"Dimensions", "[", "positions", "]"}], " ", "=!=", " ",
+          RowBox[{"{",
+           RowBox[{
+            RowBox[{"Length", "[", "satelliteSet", "]"}], ",", " ", "3"}],
+           "}"}]}], " ", "||", " ",
+         RowBox[{"!", " ",
+          RowBox[{"MatrixQ", "[",
+           RowBox[{"positions", ",", " ", "NumericQ"}], "]"}]}]}], ",", "\n",
+        "   ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"modelParameters", "::", "position"}], ",", " ",
+           "eventKey", ",", " ", "modelName"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"rawTimes", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{"entries", ",", " ", "\"\<t0\>\"", ",", " ",
+         RowBox[{"Missing", "[", "\"\<t0\>\"", "]"}]}], "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"!", " ",
+         RowBox[{"AllTrue", "[",
+          RowBox[{"rawTimes", ",", " ", "StringQ"}], "]"}]}], ",", " ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"modelParameters", "::", "time"}], ",", " ", "eventKey", ",",
+            " ", "modelName"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"crossingTimes", " ", "=", " ",
+       RowBox[{
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"AbsoluteTime", "[",
+           RowBox[{"DateObject", "[",
+            RowBox[{"#", ",", " ",
+             RowBox[{"TimeZone", " ", "->", " ", "0"}]}], "]"}], "]"}], " ",
+          "&"}], ")"}], " ", "/@", " ", "rawTimes"}]}], ";", "\n", "  ",
+      RowBox[{"ordering", " ", "=", " ",
+       RowBox[{"Ordering", "[", "crossingTimes", "]"}]}], ";", "\n", "  ",
+      RowBox[{"crossingTimes", " ", "=", " ",
+       RowBox[{"crossingTimes", "[",
+        RowBox[{"[", "ordering", "]"}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"!", " ",
+         RowBox[{"AllTrue", "[",
+          RowBox[{
+           RowBox[{"Differences", "[", "crossingTimes", "]"}], ",", " ",
+           RowBox[{
+            RowBox[{"#", " ", ">", " ", "0"}], " ", "&"}]}], "]"}]}], ",",
+        "\n", "   ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"modelParameters", "::", "time"}], ",", " ", "eventKey", ",",
+            " ", "modelName"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"relativeTimes", " ", "=", " ",
+       RowBox[{"Round", "[",
+        RowBox[{
+         RowBox[{"N", "[",
+          RowBox[{
+           RowBox[{"Rest", "[", "crossingTimes", "]"}], " ", "-", " ",
+           RowBox[{"First", "[", "crossingTimes", "]"}]}], "]"}], ",", " ",
+         RowBox[{"1", "/",
+          RowBox[{"10", "^", "6"}]}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"<|",
+       RowBox[{
+        RowBox[{"\"\<event\>\"", " ", "->", " ", "eventKey"}], ",", " ",
+        RowBox[{"\"\<model\>\"", " ", "->", " ", "modelName"}], ",", " ",
+        RowBox[{"\"\<satellites\>\"", " ", "->", " ",
+         RowBox[{"satelliteSet", "[",
+          RowBox[{"[", "ordering", "]"}], "]"}]}], ",", "\n", "    ",
+        RowBox[{"\"\<positionsRE\>\"", " ", "->", " ",
+         RowBox[{"positions", "[",
+          RowBox[{"[", "ordering", "]"}], "]"}]}], ",", " ",
+        RowBox[{"\"\<relativeTimesSeconds\>\"", " ", "->", " ",
+         "relativeTimes"}], ",", "\n", "    ",
+        RowBox[{"\"\<propagationDirectionGSE\>\"", " ", "->", " ",
+         RowBox[{"Normalize", "[",
+          RowBox[{"N", "[", "direction", "]"}], "]"}]}]}], "|>"}]}]}], "\n",
+    " ", "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[18]:=",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "eventParameters", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eventParameters", "::", "event"}], " ", "=",
+   " ", "\"\<Event `1` is not present in the shock catalogue.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eventParameters", "::", "satellites"}], " ", "=",
+   " ", "\"\<Event `1` does not have enough spacecraft for the fixed normal \
+fits. Plane requires ACE, Wind, DSCOVR, THEMIS-B; sphere also requires MMS. \
+Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eventParameters", "[", "eventKey_String", "]"}], " ", ":=", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "event", ",", " ", "missingPlane", ",", " ", "missingSpherical", ",",
+       " ", "direction", ",", " ", "planar", ",", " ", "spherical"}], "}"}], ",",
+      "\n", " ",
+     RowBox[{
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"!", " ",
+         RowBox[{"KeyExistsQ", "[",
+          RowBox[{"shockParams", ",", " ", "eventKey"}], "]"}]}], ",", " ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"eventParameters", "::", "event"}], ",", " ", "eventKey"}],
+           "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
+      RowBox[{"event", " ", "=", " ",
+       RowBox[{"shockParams", "[", "eventKey", "]"}]}], ";", "\n", " ",
+      RowBox[{"missingPlane", " ", "=", " ",
+       RowBox[{"Complement", "[",
+        RowBox[{"planeSatellites", ",", " ",
+         RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", "\n", " ",
+      RowBox[{"missingSpherical", " ", "=", " ",
+       RowBox[{"Complement", "[",
+        RowBox[{"sphericalSatellites", ",", " ",
+         RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"missingPlane", " ", "=!=", " ",
+          RowBox[{"{", "}"}]}], " ", "||", " ",
+         RowBox[{"missingSpherical", " ", "=!=", " ",
+          RowBox[{"{", "}"}]}]}], ",", "\n", "  ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"eventParameters", "::", "satellites"}], ",", " ",
+           "eventKey", ",", " ",
+           RowBox[{"satelliteNames", "[", "missingPlane", "]"}], ",", " ",
+           RowBox[{"satelliteNames", "[", "missingSpherical", "]"}]}], "]"}],
+         ";", "\n", "  ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
+      RowBox[{"direction", " ", "=", " ",
+       RowBox[{"propagationDirectionVector", "[", "eventKey", "]"}]}], ";",
+      "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"direction", " ", "===", " ", "$Failed"}], ",", " ",
+        RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", "\n", " ",
+      RowBox[{"planar", " ", "=", " ",
+       RowBox[{"modelParameters", "[",
+        RowBox[{
+        "eventKey", ",", " ", "\"\<planar\>\"", ",", " ", "planeSatellites", ",",
+          " ", "direction"}], "]"}]}], ";", "\n", " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"planar", " ", "===", " ", "$Failed"}], ",", " ",
+        RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", "\n", " ",
+      RowBox[{"spherical", " ", "=", " ",
+       RowBox[{"modelParameters", "[",
+        RowBox[{
+        "eventKey", ",", " ", "\"\<spherical\>\"", ",", " ",
+         "sphericalSatellites", ",", " ", "direction"}], "]"}]}], ";", "\n",
+      " ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"spherical", " ", "===", " ", "$Failed"}], ",", " ",
+        RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", "\n", " ",
+      RowBox[{"<|",
+       RowBox[{
+        RowBox[{"\"\<planar\>\"", " ", "->", " ", "planar"}], ",", " ",
+        RowBox[{"\"\<spherical\>\"", " ", "->", " ", "spherical"}]}],
+       "|>"}]}]}], "\n", "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[22]:=",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Write Results", "Section",ExpressionUUID->"26910323-b76c-4bb0-b2dc-165039b4494f"],
+
+Cell["\<\
+Each successful solve is stored under event, model, and the chronological \
+satellite string. Existing satellite combinations are preserved for \
+comparison.\
+\>", "Text",ExpressionUUID->"3c300434-ed4a-41bf-a826-a0a647883255"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[",
+   RowBox[{"satelliteString", ",", " ", "shockSurfaceRecord"}], "]"}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"satelliteString", "[", "parameters_Association", "]"}], " ", ":=",
+    " ",
+   RowBox[{"StringRiffle", "[",
+    RowBox[{
+     RowBox[{"parameters", "[", "\"\<satellites\>\"", "]"}], ",",
+     " ", "\"\<,\>\""}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"shockSurfaceRecord", "[",
+    RowBox[{
+    "modelName_String", ",", " ", "parameters_Association", ",", " ",
+     "result_Association"}], "]"}], " ", ":=", "\n", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "direction", ",", " ", "speedRE", ",", " ", "speedKm", ",", " ",
+       "referenceSatellite", ",", " ", "referenceTime", ",", " ", "surface"}],
+       "}"}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"direction", " ", "=", " ",
+       RowBox[{"N", "[",
+        RowBox[{"parameters", "[", "\"\<propagationDirectionGSE\>\"", "]"}],
+        "]"}]}], ";", "\n", "  ",
+      RowBox[{"speedRE", " ", "=", " ",
+       RowBox[{"N", "[",
+        RowBox[{"result", "[", "\"\<speedREPerSecond\>\"", "]"}], "]"}]}], ";",
+       "\n", "  ",
+      RowBox[{"speedKm", " ", "=", " ",
+       RowBox[{"N", "[",
+        RowBox[{"result", "[", "\"\<speedKmPerSecond\>\"", "]"}], "]"}]}], ";",
+       "\n", "  ",
+      RowBox[{"referenceSatellite", " ", "=", " ",
+       RowBox[{"First", "[",
+        RowBox[{"parameters", "[", "\"\<satellites\>\"", "]"}], "]"}]}], ";",
+      "\n", "  ",
+      RowBox[{"referenceTime", " ", "=", " ",
+       RowBox[{
+        RowBox[{
+         RowBox[{"shockParams", "[",
+          RowBox[{"parameters", "[", "\"\<event\>\"", "]"}], "]"}], "[",
+         "referenceSatellite", "]"}], "[", "\"\<t0\>\"", "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"surface", " ", "=", " ",
+       RowBox[{"Switch", "[",
+        RowBox[{"modelName", ",", "\n", "    ", "\"\<planar\>\"", ",", " ",
+         RowBox[{"<|",
+          RowBox[{
+           RowBox[{"\"\<type\>\"", " ", "->", " ", "\"\<plane\>\""}], ",",
+           " ",
+           RowBox[{"\"\<normal_gse\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<normalGSE\>\"", "]"}], "]"}]}], ",",
+           "\n", "      ",
+           RowBox[{"\"\<offset_re\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<planeOffsetRE\>\"", "]"}], "]"}]}], ",",
+            " ",
+           RowBox[{"\"\<max_residual_re\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<maxResidualRE\>\"", "]"}], "]"}]}]}],
+           "|>"}], ",", "\n", "    ", "\"\<spherical\>\"", ",", " ",
+         RowBox[{"<|",
+          RowBox[{
+           RowBox[{"\"\<type\>\"", " ", "->", " ", "\"\<sphere\>\""}], ",",
+           " ",
+           RowBox[{"\"\<center_at_reference_re\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<centerAtReferenceRE\>\"", "]"}],
+             "]"}]}], ",", "\n", "      ",
+           RowBox[{"\"\<radius_re\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<radiusRE\>\"", "]"}], "]"}]}], ",",
+           " ",
+           RowBox[{"\"\<sigma_re2\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<sigmaRE2\>\"", "]"}], "]"}]}], ",",
+           "\n", "      ",
+           RowBox[{"\"\<normal_gse_at_reference\>\"", " ", "->", " ",
+            RowBox[{"N", "[",
+             RowBox[{"result", "[", "\"\<normalGSE\>\"", "]"}], "]"}]}], ",",
+           "\n", "      ",
+
+           RowBox[{"\"\<max_squared_distance_residual_re2\>\"", " ", "->",
+            " ",
+            RowBox[{"N", "[",
+             RowBox[{
+             "result", "[", "\"\<maxSquaredDistanceResidualRE2\>\"", "]"}],
+             "]"}]}]}], "|>"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"<|",
+       RowBox[{
+        RowBox[{"\"\<satellite_string\>\"", " ", "->", " ",
+         RowBox[{"satelliteString", "[", "parameters", "]"}]}], ",", " ",
+        RowBox[{"\"\<satellites\>\"", " ", "->", " ",
+         RowBox[{"parameters", "[", "\"\<satellites\>\"", "]"}]}], ",", "\n",
+        "    ",
+        RowBox[{"\"\<reference_satellite\>\"", " ", "->", " ",
+         "referenceSatellite"}], ",", " ",
+        RowBox[{"\"\<reference_time\>\"", " ", "->", " ", "referenceTime"}], ",",
+         "\n", "    ",
+        RowBox[{"\"\<radial_propagation\>\"", " ", "->", " ",
+         RowBox[{"TrueQ", "[",
+          RowBox[{
+          "propagationDirectionSource", " ", "===",
+           " ", "\"\<SunRadial\>\""}], "]"}]}], ",", "\n", "    ",
+        RowBox[{"\"\<propagation_direction_gse\>\"", " ", "->", " ",
+         "direction"}], ",", " ",
+        RowBox[{"\"\<speed_re_s\>\"", " ", "->", " ", "speedRE"}], ",", "\n",
+        "    ",
+        RowBox[{"\"\<speed_km_s\>\"", " ", "->", " ", "speedKm"}], ",", " ",
+        RowBox[{"\"\<shock_velocity_gse_km_s\>\"", " ", "->", " ",
+         RowBox[{"N", "[",
+          RowBox[{"speedKm", " ", "direction"}], "]"}]}], ",", "\n", "    ",
+        RowBox[{"\"\<surface\>\"", " ", "->", " ", "surface"}]}], "|>"}]}]}],
+    "\n", " ", "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[26]:=",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "writeShockSurfaceResults", "]"}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"writeShockSurfaceResults", "::", "result"}], " ", "=",
+   " ", "\"\<Both planar and spherical solves must return associations before \
+results can be written.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"writeShockSurfaceResults", "[",
+    RowBox[{
+    "eventKey_String", ",", " ", "parameters_Association", ",", " ",
+     "result_Association"}], "]"}], " ", ":=", "\n", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "catalog", ",", " ", "eventRecord", ",", " ", "writtenRecords", ",",
+       " ", "modelFits", ",", " ", "record", ",", " ", "satelliteKey"}],
+      "}"}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"!", " ",
+          RowBox[{"AssociationQ", "[",
+           RowBox[{"Lookup", "[",
+            RowBox[{"result", ",", " ", "\"\<planar\>\"", ",", " ",
+             RowBox[{"Missing", "[", "\"\<planar\>\"", "]"}]}], "]"}],
+           "]"}]}], " ", "||", "\n", "    ",
+         RowBox[{"!", " ",
+          RowBox[{"AssociationQ", "[",
+           RowBox[{"Lookup", "[",
+            RowBox[{"result", ",", " ", "\"\<spherical\>\"", ",", " ",
+             RowBox[{"Missing", "[", "\"\<spherical\>\"", "]"}]}], "]"}],
+           "]"}]}]}], ",", "\n", "   ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{"writeShockSurfaceResults", "::", "result"}], "]"}], ";",
+         " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"catalog", " ", "=", " ",
+       RowBox[{"If", "[",
+        RowBox[{
+         RowBox[{"FileExistsQ", "[", "shockNormalsPath", "]"}], ",", " ",
+         RowBox[{"Import", "[",
+          RowBox[{"shockNormalsPath", ",", " ", "\"\<RawJSON\>\""}], "]"}], ",",
+          " ",
+         RowBox[{"<|", "|>"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"eventRecord", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{"catalog", ",", " ", "eventKey", ",", " ",
+         RowBox[{"<|", "|>"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"writtenRecords", " ", "=", " ",
+       RowBox[{"AssociationMap", "[", "\n", "    ",
+        RowBox[{
+         RowBox[{"Function", "[",
+          RowBox[{"modelName", ",", "\n", "     ",
+           RowBox[{
+            RowBox[{"record", " ", "=", " ",
+             RowBox[{"shockSurfaceRecord", "[",
+              RowBox[{"modelName", ",", " ",
+               RowBox[{"parameters", "[", "modelName", "]"}], ",", " ",
+               RowBox[{"result", "[", "modelName", "]"}]}], "]"}]}], ";",
+            "\n", "     ",
+            RowBox[{"satelliteKey", " ", "=", " ",
+             RowBox[{"record", "[", "\"\<satellite_string\>\"", "]"}]}], ";",
+            "\n", "     ",
+            RowBox[{"modelFits", " ", "=", " ",
+             RowBox[{"Lookup", "[",
+              RowBox[{"eventRecord", ",", " ", "modelName", ",", " ",
+               RowBox[{"<|", "|>"}]}], "]"}]}], ";", "\n", "     ",
+            RowBox[{"If", "[",
+             RowBox[{
+              RowBox[{
+               RowBox[{"!", " ",
+                RowBox[{"AssociationQ", "[", "modelFits", "]"}]}], " ", "||",
+               " ",
+               RowBox[{"KeyExistsQ", "[",
+                RowBox[{"modelFits", ",", " ", "\"\<status\>\""}], "]"}], " ",
+                "||", "\n", "       ",
+               RowBox[{"KeyExistsQ", "[",
+                RowBox[{"modelFits", ",", " ", "\"\<speedREPerSecond\>\""}],
+                "]"}]}], ",", " ",
+              RowBox[{"modelFits", " ", "=", " ",
+               RowBox[{"<|", "|>"}]}]}], "]"}], ";", "\n", "     ",
+            RowBox[{"AssociateTo", "[",
+             RowBox[{"modelFits", ",", " ",
+              RowBox[{"satelliteKey", " ", "->", " ", "record"}]}], "]"}], ";",
+             "\n", "     ",
+            RowBox[{"AssociateTo", "[",
+             RowBox[{"eventRecord", ",", " ",
+              RowBox[{"modelName", " ", "->", " ", "modelFits"}]}], "]"}], ";",
+             "\n", "     ", "record"}]}], "]"}], ",", " ",
+         RowBox[{"{",
+          RowBox[{"\"\<planar\>\"", ",", " ", "\"\<spherical\>\""}], "}"}]}],
+        "]"}]}], ";", "\n", "  ",
+      RowBox[{"AssociateTo", "[",
+       RowBox[{"catalog", ",", " ",
+        RowBox[{"eventKey", " ", "->", " ", "eventRecord"}]}], "]"}], ";",
+      "\n", "  ",
+      RowBox[{"Export", "[",
+       RowBox[{
+       "shockNormalsPath", ",", " ", "catalog", ",", " ", "\"\<RawJSON\>\""}],
+        "]"}], ";", "\n", "  ", "writtenRecords"}]}], "\n", " ", "]"}]}],
+  ";"}]}], "Input",
+ CellLabel->"In[29]:=",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Display", "Section",ExpressionUUID->"516c17da-e177-4b03-8e6f-18fa20fde077"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[",
+   RowBox[{"eventInputSummary", ",", " ", "eventResultSummary"}], "]"}],
+  ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eventInputSummary", "[", "parameters_Association", "]"}], " ", ":=",
+    " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"planar", " ", "=", " ",
+        RowBox[{"parameters", "[", "\"\<planar\>\"", "]"}]}], ",", " ",
+       RowBox[{"spherical", " ", "=", " ",
+        RowBox[{"parameters", "[", "\"\<spherical\>\"", "]"}]}]}], "}"}], ",",
+      "\n", " ",
+     RowBox[{"Grid", "[",
+      RowBox[{
+       RowBox[{"{",
+        RowBox[{
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"Style", "[",
+            RowBox[{"\"\<Event\>\"", ",", " ", "Bold"}], "]"}], ",", " ",
+           RowBox[{"planar", "[", "\"\<event\>\"", "]"}]}], "}"}], ",", "\n",
+         "   ",
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"Style", "[",
+            RowBox[{"\"\<Plane crossings\>\"", ",", " ", "Bold"}], "]"}], ",",
+            " ",
+           RowBox[{"StringRiffle", "[",
+            RowBox[{
+             RowBox[{"satelliteNames", "[",
+              RowBox[{"planar", "[", "\"\<satellites\>\"", "]"}], "]"}], ",",
+             " ", "\"\< -> \>\""}], "]"}]}], "}"}], ",", "\n", "   ",
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"Style", "[",
+            RowBox[{"\"\<Sphere crossings\>\"", ",", " ", "Bold"}], "]"}], ",",
+            " ",
+           RowBox[{"StringRiffle", "[",
+            RowBox[{
+             RowBox[{"satelliteNames", "[",
+              RowBox[{"spherical", "[", "\"\<satellites\>\"", "]"}], "]"}], ",",
+              " ", "\"\< -> \>\""}], "]"}]}], "}"}], ",", "\n", "   ",
+         RowBox[{"{",
+          RowBox[{
+           RowBox[{"Style", "[",
+            RowBox[{"\"\<Propagation direction (GSE)\>\"", ",", " ", "Bold"}],
+             "]"}], ",", " ",
+           RowBox[{"planar", "[", "\"\<propagationDirectionGSE\>\"", "]"}]}],
+          "}"}]}], "}"}], ",", "\n", "  ",
+       RowBox[{"Alignment", " ", "->", " ", "Left"}], ",", " ",
+       RowBox[{"Frame", " ", "->", " ", "All"}]}], "]"}]}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eventResultSummary", "[",
+    RowBox[{"parameters_Association", ",", " ", "result_Association"}], "]"}],
+    " ", ":=", "\n", " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"planar", " ", "=", " ",
+        RowBox[{"parameters", "[", "\"\<planar\>\"", "]"}]}], ",", " ",
+       RowBox[{"spherical", " ", "=", " ",
+        RowBox[{"parameters", "[", "\"\<spherical\>\"", "]"}]}], ",", "\n",
+       "   ",
+       RowBox[{"planarResult", " ", "=", " ",
+        RowBox[{"result", "[", "\"\<planar\>\"", "]"}]}], ",", " ",
+       RowBox[{"sphericalResult", " ", "=", " ",
+        RowBox[{"result", "[", "\"\<spherical\>\"", "]"}]}]}], "}"}], ",",
+     "\n", "  ",
+     RowBox[{
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{
+         RowBox[{"!", " ",
+          RowBox[{"AssociationQ", "[", "planarResult", "]"}]}], " ", "||",
+         " ",
+         RowBox[{"!", " ",
+          RowBox[{"AssociationQ", "[", "sphericalResult", "]"}]}]}], ",",
+        "\n", "   ",
+        RowBox[{"Return", "[",
+         RowBox[{"Style", "[",
+
+          RowBox[{"\"\<The selected solve did not return both fits; see the \
+messages above.\>\"", ",", " ",
+           RowBox[{"Darker", "[", "Red", "]"}]}], "]"}], "]"}]}], "]"}], ";",
+      "\n", "  ",
+      RowBox[{"Grid", "[",
+       RowBox[{
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"{",
+           RowBox[{
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Model\>\"", ",", " ", "Bold"}], "]"}], ",", " ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Crossings\>\"", ",", " ", "Bold"}], "]"}], ",", " ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Translation scalar (km/s)\>\"", ",", " ", "Bold"}],
+             "]"}], ",", "\n", "     ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Shock velocity (GSE km/s)\>\"", ",", " ", "Bold"}],
+             "]"}], ",", " ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Normal at reference (GSE)\>\"", ",", " ", "Bold"}],
+             "]"}]}], "}"}], ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{"\"\<Plane\>\"", ",", " ",
+            RowBox[{"StringRiffle", "[",
+             RowBox[{
+              RowBox[{"satelliteNames", "[",
+               RowBox[{"planar", "[", "\"\<satellites\>\"", "]"}], "]"}], ",",
+               " ", "\"\< -> \>\""}], "]"}], ",", " ",
+            RowBox[{"planarResult", "[", "\"\<speedKmPerSecond\>\"", "]"}], ",",
+             "\n", "     ",
+            RowBox[{
+             RowBox[{"planarResult", "[", "\"\<speedKmPerSecond\>\"", "]"}], " ",
+             RowBox[{
+             "planar", "[", "\"\<propagationDirectionGSE\>\"", "]"}]}], ",",
+            " ",
+            RowBox[{"planarResult", "[", "\"\<normalGSE\>\"", "]"}]}], "}"}],
+          ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{"\"\<Sphere\>\"", ",", " ",
+            RowBox[{"StringRiffle", "[",
+             RowBox[{
+              RowBox[{"satelliteNames", "[",
+               RowBox[{"spherical", "[", "\"\<satellites\>\"", "]"}], "]"}], ",",
+               " ", "\"\< -> \>\""}], "]"}], ",", " ",
+            RowBox[{"sphericalResult", "[", "\"\<speedKmPerSecond\>\"", "]"}],
+             ",", "\n", "     ",
+            RowBox[{
+             RowBox[{
+             "sphericalResult", "[", "\"\<speedKmPerSecond\>\"", "]"}], " ",
+             RowBox[{
+             "spherical", "[", "\"\<propagationDirectionGSE\>\"", "]"}]}], ",",
+             " ",
+            RowBox[{"sphericalResult", "[", "\"\<normalGSE\>\"", "]"}]}],
+           "}"}]}], "}"}], ",", "\n", "   ",
+        RowBox[{"Alignment", " ", "->", " ", "Left"}], ",", " ",
+        RowBox[{"Frame", " ", "->", " ", "All"}]}], "]"}]}]}], "\n", " ",
+    "]"}]}], ";"}]}], "Input",
+ CellLabel->"In[32]:=",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"If", "[",
+  RowBox[{
+   RowBox[{"eventKeys", " ", "===", " ",
+    RowBox[{"{", "}"}]}], ",", "\n", " ",
+   RowBox[{"Style", "[",
+    RowBox[{"\"\<No shock events were found in Shocks/Shock Params.json.\>\"",
+      ",", " ",
+     RowBox[{"Darker", "[", "Red", "]"}]}], "]"}], ",", "\n", " ",
+   RowBox[{"DynamicModule", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"selectedEvent", " ", "=", " ",
+        RowBox[{"First", "[", "eventKeys", "]"}]}], ",", " ",
+       RowBox[{"selectedParameters", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotLoaded\>\"", "]"}]}], ",", "\n",
+       "   ",
+       RowBox[{"selectedResult", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ",", " ",
+       RowBox[{"selectedWrite", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}]}], "}"}], ",",
+     "\n", "  ",
+     RowBox[{
+      RowBox[{"selectedParameters", " ", "=", " ",
+       RowBox[{"eventParameters", "[", "selectedEvent", "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"Column", "[",
+       RowBox[{
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"Grid", "[",
+           RowBox[{
+            RowBox[{"{",
+             RowBox[{"{",
+              RowBox[{
+               RowBox[{"Style", "[",
+                RowBox[{"\"\<Event\>\"", ",", " ", "Bold"}], "]"}], ",", "\n",
+                "       ",
+               RowBox[{"PopupMenu", "[",
+                RowBox[{
+                 RowBox[{"Dynamic", "[",
+                  RowBox[{"selectedEvent", ",", " ",
+                   RowBox[{
+                    RowBox[{"(",
+                    RowBox[{
+                    RowBox[{"selectedEvent", " ", "=", " ", "#"}], ";", " ",
+                    RowBox[{"selectedParameters", " ", "=", " ",
+                    RowBox[{"eventParameters", "[", "#", "]"}]}], ";", "\n",
+                    "          ",
+                    RowBox[{"selectedResult", " ", "=", " ",
+                    RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ";",
+                     " ",
+                    RowBox[{"selectedWrite", " ", "=", " ",
+                    RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}]}],
+                    ")"}], " ", "&"}]}], "]"}], ",", " ", "eventKeys"}],
+                "]"}]}], "}"}], "}"}], ",", "\n", "     ",
+            RowBox[{"Alignment", " ", "->", " ", "Left"}]}], "]"}], ",", "\n",
+           "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"If", "[",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedParameters", "]"}], ",",
+             " ",
+             RowBox[{"eventInputSummary", "[", "selectedParameters", "]"}], ",",
+              "\n", "      ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<This event cannot supply the fixed fits; see the \
+message above.\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Button", "[",
+
+           RowBox[{"\"\<Solve and write selected event\>\"", ",", "\n",
+            "     ",
+            RowBox[{
+             RowBox[{"selectedResult", " ", "=", " ",
+              RowBox[{"solveShockNormals", "[", "selectedParameters", "]"}]}],
+              ";", "\n", "     ",
+             RowBox[{"selectedWrite", " ", "=", " ",
+              RowBox[{"If", "[",
+               RowBox[{
+                RowBox[{
+                 RowBox[{"AssociationQ", "[", "selectedResult", "]"}], " ", "&&",
+                  "\n", "       ",
+                 RowBox[{"AssociationQ", "[",
+                  RowBox[{"Lookup", "[",
+                   RowBox[{
+                   "selectedResult", ",", " ", "\"\<planar\>\"", ",", " ",
+                    RowBox[{"Missing", "[", "\"\<planar\>\"", "]"}]}], "]"}],
+                  "]"}], " ", "&&", "\n", "       ",
+                 RowBox[{"AssociationQ", "[",
+                  RowBox[{"Lookup", "[",
+                   RowBox[{
+                   "selectedResult", ",", " ", "\"\<spherical\>\"", ",", " ",
+
+                    RowBox[{"Missing", "[", "\"\<spherical\>\"", "]"}]}],
+                   "]"}], "]"}]}], ",", "\n", "      ",
+                RowBox[{"writeShockSurfaceResults", "[",
+                 RowBox[{
+                 "selectedEvent", ",", " ", "selectedParameters", ",", " ",
+                  "selectedResult"}], "]"}], ",", " ", "$Failed"}], "]"}]}]}],
+             ",", "\n", "     ",
+            RowBox[{"Enabled", " ", "->", " ",
+             RowBox[{"Dynamic", "[",
+              RowBox[{"AssociationQ", "[", "selectedParameters", "]"}],
+              "]"}]}], ",", " ",
+            RowBox[{"Method", " ", "->", " ", "\"\<Queued\>\""}]}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"Which", "[",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedResult", "]"}], ",", " ",
+             RowBox[{"eventResultSummary", "[",
+              RowBox[{"selectedParameters", ",", " ", "selectedResult"}],
+              "]"}], ",", "\n", "      ",
+             RowBox[{"selectedResult", " ", "===", " ",
+              RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ",", " ",
+
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<Use the button to calculate and store both fits.\>\
+\"", ",", " ", "Gray"}], "]"}], ",", "\n", "      ", "True", ",", " ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<The selected solve failed; see the messages above.\
+\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"Which", "[",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedWrite", "]"}], ",", "\n",
+             "      ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<Wrote both fits to Kinematic Shock Normals \
+(Wolfram).json.\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+             "      ",
+             RowBox[{"selectedWrite", " ", "===", " ",
+              RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}], ",", " ",
+              "Nothing", ",", "\n", "      ", "True", ",", " ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<Results were not written because one or both \
+solves failed.\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}]}],
+          "}"}], ",", "\n", "   ",
+        RowBox[{"Spacings", " ", "->", " ", "1.5"}]}], "]"}]}]}], "\n", " ",
+    "]"}]}], "\n", "]"}]], "Input",
+ CellLabel->"In[35]:=",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{958, 896},
+WindowMargins->{{Automatic, 38}, {Automatic, -1011}},
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"8642a0c0-863f-41bc-be3b-248d5cf85bdf"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 88, 0, 96, "Title",ExpressionUUID->"d3410f31-fb32-47d9-8088-84bd6d88920a"],
+Cell[667, 24, 258, 4, 55, "Text",ExpressionUUID->"9acd418c-7924-410e-82a6-312d81011e3a"],
+Cell[CellGroupData[{
+Cell[950, 32, 85, 0, 66, "Section",ExpressionUUID->"38c62929-d52e-430c-b386-669222d96526"],
+Cell[1038, 34, 2072, 51, 213, "Input",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3147, 90, 88, 0, 66, "Section",ExpressionUUID->"e7bfc0a9-0d90-474c-b9e5-e2b04f036e51"],
+Cell[3238, 92, 835, 21, 90, "Input",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4110, 118, 95, 0, 66, "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
+Cell[4208, 120, 249, 4, 55, "Text",ExpressionUUID->"82bf79d9-c1d1-4461-bd28-aa470c183292"],
+Cell[4460, 126, 1790, 46, 172, "Input",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6287, 177, 90, 0, 66, "Section",ExpressionUUID->"6a6dd5d7-3622-4dca-b6b7-49c205773616"],
+Cell[6380, 179, 4173, 103, 376, "Input",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
+Cell[10556, 284, 7215, 172, 580, "Input",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
+Cell[17774, 458, 4078, 92, 478, "Input",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[21889, 555, 87, 0, 66, "Section",ExpressionUUID->"26910323-b76c-4bb0-b2dc-165039b4494f"],
+Cell[21979, 557, 236, 4, 55, "Text",ExpressionUUID->"3c300434-ed4a-41bf-a826-a0a647883255"],
+Cell[22218, 563, 5442, 122, 478, "Input",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
+Cell[27663, 687, 4810, 108, 499, "Input",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[32510, 800, 81, 0, 66, "Section",ExpressionUUID->"516c17da-e177-4b03-8e6f-18fa20fde077"],
+Cell[32594, 802, 6203, 148, 478, "Input",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
+Cell[CellGroupData[{
+Cell[38822, 954, 6939, 152, 601, "Input",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"],
+Cell[45764, 1108, 8402, 173, 366, "Output",ExpressionUUID->"3a60cb5b-a25a-4e1a-92c0-6e0840fadb0a"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
