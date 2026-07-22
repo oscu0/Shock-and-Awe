@@ -1,0 +1,1167 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 15.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     48634,       1158]
+NotebookOptionsPosition[     45623,       1105]
+NotebookOutlinePosition[     46086,       1123]
+CellTagsIndexPosition[     46043,       1120]
+WindowTitle->Tilted Parabolic Cylinder Model
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Tilted Parabolic-Cylinder Shock Front", "Title",ExpressionUUID->"d4ad322c-1703-4821-b544-bfc9791f5648"],
+
+Cell["\<\
+A freely tilted local shock patch translating along the known ambient \
+solar-wind direction. The propagation direction fixes the motion, not the \
+local surface normal.\
+\>", "Text",ExpressionUUID->"88718d99-8b3c-4ffa-8ad7-a44c35fc641a"],
+
+Cell[BoxData[
+ FormBox[
+  FrameBox[
+   RowBox[{
+    RowBox[{StyleBox["r", FontWeight->Bold], "(",
+     RowBox[{StyleBox["q", FontWeight->Bold], ",", "t"}], ")"}], "=",
+    RowBox[{
+     SubscriptBox[StyleBox["p", FontWeight->Bold], "A"], "+",
+     StyleBox["q", FontWeight->Bold], "+",
+     RowBox[{"[",
+      RowBox[{
+       RowBox[{"\[Nu]", RowBox[{"(",
+          RowBox[{"t", "-", SubscriptBox["t", "A"]}], ")"}]}], "+",
+       RowBox[{StyleBox["g", FontWeight->Bold], "\[CenterDot]",
+        StyleBox["q", FontWeight->Bold]}], "+",
+       RowBox[{
+        FractionBox["\[Lambda]", "2"],
+        SuperscriptBox[
+         RowBox[{"(",
+          RowBox[{
+           OverscriptBox[StyleBox["c", FontWeight->Bold], "^"],
+           "\[CenterDot]", StyleBox["q", FontWeight->Bold]}], ")"}],
+         "2"]}]}], "]"}], "\[ThinSpace]",
+     OverscriptBox[StyleBox["d", FontWeight->Bold], "^"]}]}],
+   Background->RGBColor[0.97, 0.98, 1.],
+   FrameMargins->{{14, 14}, {10, 10}},
+   FrameStyle->GrayLevel[0.72],
+   RoundingRadius->5],
+  TraditionalForm]], "DisplayFormula",ExpressionUUID->"1f92e70a-a135-4002-\
+be73-e2d3a43269eb"],
+
+Cell["\<\
+The transverse parameter vector q satisfies q.dHat = 0. Equivalently, q = u \
+e1Hat + v e2Hat. Thus u and v are merely coordinates in the plane \
+perpendicular to the ambient solar-wind direction.\
+\>", "Text",ExpressionUUID->"1fd1d0ef-786b-4d18-af47-bf7345a94755"],
+
+Cell[CellGroupData[{
+
+Cell["Geometry definitions", "Section",ExpressionUUID->"4ce762e3-66e4-4b04-98c6-98c0875c171c"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"makeTransverseBasis", "[", "d_", "]"}], " ", ":=", " ",
+    RowBox[{"Module", "[",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"seed", ",", " ", "e1", ",", " ", "e2"}], "}"}], ",", "\n",
+      "  ",
+      RowBox[{
+       RowBox[{"seed", " ", "=", " ",
+        RowBox[{"If", "[",
+         RowBox[{
+          RowBox[{
+           RowBox[{"Abs", "[",
+            RowBox[{"d", " ", ".", " ",
+             RowBox[{"{",
+              RowBox[{"0", ",", " ", "0", ",", " ", "1"}], "}"}]}], "]"}],
+           " ", "<", " ", "0.9"}], ",", " ",
+          RowBox[{"{",
+           RowBox[{"0", ",", " ", "0", ",", " ", "1"}], "}"}], ",", " ",
+          RowBox[{"{",
+           RowBox[{"0", ",", " ", "1", ",", " ", "0"}], "}"}]}], "]"}]}], ";",
+        "\n", "  ",
+       RowBox[{"e1", " ", "=", " ",
+        RowBox[{"Normalize", "[",
+         RowBox[{"Cross", "[",
+          RowBox[{"seed", ",", " ", "d"}], "]"}], "]"}]}], ";", "\n", "  ",
+       RowBox[{"e2", " ", "=", " ",
+        RowBox[{"Normalize", "[",
+         RowBox[{"Cross", "[",
+          RowBox[{"d", ",", " ", "e1"}], "]"}], "]"}]}], ";", "\n", "  ",
+       RowBox[{"{",
+        RowBox[{"e1", ",", " ", "e2"}], "}"}]}]}], "\n", "]"}]}], ";"}],
+  "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"dHat", " ", "=", " ",
+    RowBox[{"Normalize", "[",
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"-", "0.9998083395337771"}], ",", " ",
+       RowBox[{"-", "0.008522194275992021"}], ",", "\n", "    ",
+       "0.017625447609452918"}], "}"}], "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"{",
+    RowBox[{"e1Hat", ",", " ", "e2Hat"}], "}"}], " ", "=", " ",
+   RowBox[{"makeTransverseBasis", "[", "dHat", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"pPerp", " ", "=", " ",
+   RowBox[{
+    RowBox[{"IdentityMatrix", "[", "3", "]"}], " ", "-", " ",
+    RowBox[{"Outer", "[",
+     RowBox[{"Times", ",", " ", "dHat", ",", " ", "dHat"}], "]"}]}]}],
+  ";"}]}], "Input",
+ CellLabel->
+  "In[122]:=",ExpressionUUID->"969da9bc-85c2-491a-acd2-242cbf10e7a8"],
+
+Cell["The local unit normal at transverse position q is", "Text",ExpressionUUID->"d7176d1e-24d8-4b39-b9f3-c40ae3072d54"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   RowBox[{"nHat", "(", "q", ")"}], "=",
+   FractionBox[
+    RowBox[{"dHat", "-", "g", "-",
+     RowBox[{"lambda", " ",
+      RowBox[{"(",
+       RowBox[{"cHat", ".", "q"}], ")"}], "cHat"}]}],
+    RowBox[{"||",
+     RowBox[{"dHat", "-", "g", "-",
+      RowBox[{"lambda", " ",
+       RowBox[{"(",
+        RowBox[{"cHat", ".", "q"}], ")"}], "cHat"}]}], "||"}]]}],
+  TraditionalForm]], "DisplayFormula",ExpressionUUID->"6ecf7255-88a2-4076-\
+a343-d2cd489f5fcc"],
+
+Cell["\<\
+The local normal component of the translating front velocity is\
+\>", "Text",ExpressionUUID->"ea181610-f60a-4542-aedc-916d6d4b179e"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   RowBox[{"vShockNormal", "(", "q", ")"}], "=",
+   RowBox[{"nu", " ", "dHat", ".",
+    RowBox[{"nHat", "(", "q", ")"}]}]}], TraditionalForm]], "DisplayFormula",E\
+xpressionUUID->"c4246b49-a697-4b02-a0a1-0a8d742b5c8c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Interactive geometry", "Section",ExpressionUUID->"e800930e-1af8-4ddb-bcc4-29ca162a92d0"],
+
+Cell["\<\
+The blue surface is the parabolic-cylinder patch. The translucent gray \
+surface is its tangent plane at the reference point. The arrows show the \
+propagation direction, local normal, curved tangent direction, and actual \
+straight cylinder-axis direction.\
+\>", "Text",ExpressionUUID->"8ec0eb72-5e12-4718-a217-70cbe4aa180f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", "\n", " ",
+  RowBox[{
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "gVec", ",", " ", "cHatLocal", ",", " ", "aPerp", ",", " ", "origin", ",",
+        " ", "qVec", ",", " ", "surfacePoint", ",", "\n", "   ", "planePoint",
+        ",", " ", "normal", ",", " ", "curvedTangent", ",", " ",
+       "cylinderAxis", ",", " ", "arrowScale"}], "}"}], ",", "\n", "\n", "  ",
+     RowBox[{
+      RowBox[{"gVec", " ", "=", " ",
+       RowBox[{
+        RowBox[{"alpha", " ", "e1Hat"}], " ", "+", " ",
+        RowBox[{"beta", " ", "e2Hat"}]}]}], ";", "\n", "  ",
+      RowBox[{"cHatLocal", " ", "=", " ",
+       RowBox[{
+        RowBox[{
+         RowBox[{"Cos", "[", "psi", "]"}], " ", "e1Hat"}], " ", "+", " ",
+        RowBox[{
+         RowBox[{"Sin", "[", "psi", "]"}], " ", "e2Hat"}]}]}], ";", "\n",
+      "  ",
+      RowBox[{"aPerp", " ", "=", " ",
+       RowBox[{"Normalize", "[",
+        RowBox[{"Cross", "[",
+         RowBox[{"dHat", ",", " ", "cHatLocal"}], "]"}], "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"origin", " ", "=", " ",
+       RowBox[{"nu", " ", "tau", " ", "dHat"}]}], ";", "\n", "\n", "  ",
+      RowBox[{
+       RowBox[{"qVec", "[",
+        RowBox[{"u_", ",", " ", "v_"}], "]"}], " ", ":=", " ",
+       RowBox[{
+        RowBox[{"u", " ", "e1Hat"}], " ", "+", " ",
+        RowBox[{"v", " ", "e2Hat"}]}]}], ";", "\n", "\n", "  ",
+      RowBox[{
+       RowBox[{"surfacePoint", "[",
+        RowBox[{"u_", ",", " ", "v_"}], "]"}], " ", ":=", "\n", "   ",
+       RowBox[{
+        RowBox[{"qVec", "[",
+         RowBox[{"u", ",", " ", "v"}], "]"}], " ", "+", "\n", "    ",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"nu", " ", "tau"}], " ", "+", " ",
+           RowBox[{"gVec", " ", ".", " ",
+            RowBox[{"qVec", "[",
+             RowBox[{"u", ",", " ", "v"}], "]"}]}], " ", "+", "\n", "      ",
+
+           RowBox[{
+            RowBox[{"lambda", "/", "2"}], " ",
+            RowBox[{
+             RowBox[{"(",
+              RowBox[{"cHatLocal", " ", ".", " ",
+               RowBox[{"qVec", "[",
+                RowBox[{"u", ",", " ", "v"}], "]"}]}], ")"}], "^", "2"}]}]}],
+          ")"}], " ", "dHat"}]}]}], ";", "\n", "\n", "  ",
+      RowBox[{
+       RowBox[{"planePoint", "[",
+        RowBox[{"u_", ",", " ", "v_"}], "]"}], " ", ":=", "\n", "   ",
+       RowBox[{
+        RowBox[{"qVec", "[",
+         RowBox[{"u", ",", " ", "v"}], "]"}], " ", "+", " ",
+        RowBox[{
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"nu", " ", "tau"}], " ", "+", " ",
+           RowBox[{"gVec", " ", ".", " ",
+            RowBox[{"qVec", "[",
+             RowBox[{"u", ",", " ", "v"}], "]"}]}]}], ")"}], " ",
+         "dHat"}]}]}], ";", "\n", "\n", "  ",
+      RowBox[{"normal", " ", "=", " ",
+       RowBox[{"Normalize", "[",
+        RowBox[{"dHat", " ", "-", " ", "gVec"}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"curvedTangent", " ", "=", " ",
+       RowBox[{"Normalize", "[",
+        RowBox[{"cHatLocal", " ", "+", " ",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"gVec", " ", ".", " ", "cHatLocal"}], ")"}], " ",
+          "dHat"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"cylinderAxis", " ", "=", " ",
+       RowBox[{"Normalize", "[",
+        RowBox[{"aPerp", " ", "+", " ",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"gVec", " ", ".", " ", "aPerp"}], ")"}], " ", "dHat"}]}],
+        "]"}]}], ";", "\n", "  ",
+      RowBox[{"arrowScale", " ", "=", " ",
+       RowBox[{"0.45", " ", "extent"}]}], ";", "\n", "\n", "  ",
+      RowBox[{"Show", "[", "\n", "   ",
+       RowBox[{
+        RowBox[{"ParametricPlot3D", "[", "\n", "    ",
+         RowBox[{
+          RowBox[{"Evaluate", "[",
+           RowBox[{"surfacePoint", "[",
+            RowBox[{"u", ",", " ", "v"}], "]"}], "]"}], ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{"u", ",", " ",
+            RowBox[{"-", "extent"}], ",", " ", "extent"}], "}"}], ",", " ",
+          RowBox[{"{",
+           RowBox[{"v", ",", " ",
+            RowBox[{"-", "extent"}], ",", " ", "extent"}], "}"}], ",", "\n",
+          "    ",
+          RowBox[{"Mesh", " ", "->", " ",
+           RowBox[{"{",
+            RowBox[{"9", ",", " ", "9"}], "}"}]}], ",", "\n", "    ",
+          RowBox[{"MeshStyle", " ", "->", " ",
+           RowBox[{"Directive", "[",
+            RowBox[{
+             RowBox[{"GrayLevel", "[", "0.25", "]"}], ",", " ",
+             RowBox[{"Opacity", "[", "0.45", "]"}]}], "]"}]}], ",", "\n",
+          "    ",
+          RowBox[{"PlotStyle", " ", "->", " ",
+           RowBox[{"Directive", "[",
+            RowBox[{
+             RowBox[{"RGBColor", "[",
+              RowBox[{"0.2", ",", " ", "0.55", ",", " ", "0.9"}], "]"}], ",",
+             " ",
+             RowBox[{"Opacity", "[", "0.72", "]"}]}], "]"}]}], ",", "\n",
+          "    ",
+          RowBox[{"PlotPoints", " ", "->", " ", "31"}], ",", "\n", "    ",
+          RowBox[{"MaxRecursion", " ", "->", " ", "1"}]}], "\n", "   ", "]"}],
+         ",", "\n", "\n", "   ",
+        RowBox[{"ParametricPlot3D", "[", "\n", "    ",
+         RowBox[{
+          RowBox[{"Evaluate", "[",
+           RowBox[{"planePoint", "[",
+            RowBox[{"u", ",", " ", "v"}], "]"}], "]"}], ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{"u", ",", " ",
+            RowBox[{
+             RowBox[{"-", "0.55"}], " ", "extent"}], ",", " ",
+            RowBox[{"0.55", " ", "extent"}]}], "}"}], ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{"v", ",", " ",
+            RowBox[{
+             RowBox[{"-", "0.55"}], " ", "extent"}], ",", " ",
+            RowBox[{"0.55", " ", "extent"}]}], "}"}], ",", "\n", "    ",
+          RowBox[{"Mesh", " ", "->", " ", "None"}], ",", "\n", "    ",
+          RowBox[{"PlotStyle", " ", "->", " ",
+           RowBox[{"Directive", "[",
+            RowBox[{"Gray", ",", " ",
+             RowBox[{"Opacity", "[", "0.22", "]"}]}], "]"}]}]}], "\n", "   ",
+         "]"}], ",", "\n", "\n", "   ",
+        RowBox[{"Graphics3D", "[",
+         RowBox[{"{", "\n", "     ",
+          RowBox[{"Thick", ",", "\n", "     ", "Red", ",", " ",
+           RowBox[{"Arrow", "[",
+            RowBox[{"{",
+             RowBox[{"origin", ",", " ",
+              RowBox[{"origin", " ", "+", " ",
+               RowBox[{"arrowScale", " ", "dHat"}]}]}], "}"}], "]"}], ",",
+           "\n", "     ",
+           RowBox[{"Text", "[",
+            RowBox[{
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<propagation  d\>\"", ",", " ", "13", ",", " ",
+               "Red", ",", " ", "Bold"}], "]"}], ",", "\n", "      ",
+             RowBox[{"origin", " ", "+", " ",
+              RowBox[{"1.12", " ", "arrowScale", " ", "dHat"}]}]}], "]"}], ",",
+            "\n", "\n", "     ", "Black", ",", " ",
+           RowBox[{"Arrow", "[",
+            RowBox[{"{",
+             RowBox[{"origin", ",", " ",
+              RowBox[{"origin", " ", "+", " ",
+               RowBox[{"arrowScale", " ", "normal"}]}]}], "}"}], "]"}], ",",
+           "\n", "     ",
+           RowBox[{"Text", "[",
+            RowBox[{
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<local normal\>\"", ",", " ", "13", ",", " ",
+               "Black", ",", " ", "Bold"}], "]"}], ",", "\n", "      ",
+             RowBox[{"origin", " ", "+", " ",
+              RowBox[{"1.12", " ", "arrowScale", " ", "normal"}]}]}], "]"}], ",",
+            "\n", "\n", "     ",
+           RowBox[{"Darker", "[", "Green", "]"}], ",", "\n", "     ",
+           RowBox[{"Arrow", "[",
+            RowBox[{"{",
+             RowBox[{"origin", ",", " ",
+              RowBox[{"origin", " ", "+", " ",
+               RowBox[{"arrowScale", " ", "curvedTangent"}]}]}], "}"}], "]"}],
+            ",", "\n", "     ",
+           RowBox[{"Text", "[",
+            RowBox[{
+             RowBox[{"Style", "[",
+              RowBox[{"\"\<curved direction\>\"", ",", " ", "13", ",", " ",
+               RowBox[{"Darker", "[", "Green", "]"}], ",", " ", "Bold"}],
+              "]"}], ",", "\n", "      ",
+             RowBox[{"origin", " ", "+", " ",
+              RowBox[{"1.12", " ", "arrowScale", " ", "curvedTangent"}]}]}],
+            "]"}], ",", "\n", "\n", "     ", "Purple", ",", " ",
+           RowBox[{"Arrow", "[",
+            RowBox[{"{",
+             RowBox[{"origin", ",", " ",
+              RowBox[{"origin", " ", "+", " ",
+               RowBox[{"arrowScale", " ", "cylinderAxis"}]}]}], "}"}], "]"}],
+           ",", "\n", "     ",
+           RowBox[{"Text", "[",
+            RowBox[{
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<cylinder axis\>\"", ",", " ", "13", ",", " ",
+               "Purple", ",", " ", "Bold"}], "]"}], ",", "\n", "      ",
+             RowBox[{"origin", " ", "+", " ",
+              RowBox[{"1.12", " ", "arrowScale", " ", "cylinderAxis"}]}]}],
+            "]"}], ",", "\n", "\n", "     ", "Orange", ",", " ",
+           RowBox[{"PointSize", "[", "0.018", "]"}], ",", " ",
+           RowBox[{"Point", "[", "origin", "]"}]}], "\n", "   ", "}"}], "]"}],
+         ",", "\n", "\n", "   ",
+        RowBox[{"Axes", " ", "->", " ", "True"}], ",", "\n", "   ",
+        RowBox[{"AxesLabel", " ", "->", " ",
+         RowBox[{"{",
+
+          RowBox[{"\"\<GSE X  (R_E)\>\"", ",", " ", "\"\<GSE Y  (R_E)\>\"", ",",
+            " ", "\"\<GSE Z  (R_E)\>\""}], "}"}]}], ",", "\n", "   ",
+        RowBox[{"BoxRatios", " ", "->", " ",
+         RowBox[{"{",
+          RowBox[{"1", ",", " ", "1", ",", " ", "1"}], "}"}]}], ",", "\n",
+        "   ",
+        RowBox[{"PlotRange", " ", "->", " ", "All"}], ",", "\n", "   ",
+        RowBox[{"ImageSize", " ", "->", " ", "Large"}], ",", "\n", "   ",
+        RowBox[{"SphericalRegion", " ", "->", " ", "True"}]}], "\n", "  ",
+       "]"}]}]}], "\n", " ", "]"}], ",", "\n", "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "alpha", ",", " ", "0.2", ",", " ", "\"\<alpha: tilt along e1\>\""}],
+      "}"}], ",", " ",
+     RowBox[{"-", "1."}], ",", " ", "1.", ",", " ", "0.02", ",", "\n", "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{"beta", ",", " ",
+       RowBox[{"-", "0.1"}], ",", " ", "\"\<beta: tilt along e2\>\""}], "}"}],
+      ",", " ",
+     RowBox[{"-", "1."}], ",", " ", "1.", ",", " ", "0.02", ",", "\n", "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "lambda", ",", " ", "0.005", ",",
+       " ", "\"\<lambda: curvature coefficient (1/R_E)\>\""}], "}"}], ",",
+     "\n", "  ",
+     RowBox[{"-", "0.02"}], ",", " ", "0.02", ",", " ", "0.0005", ",", " ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "psi", ",", " ", "0.", ",", " ", "\"\<psi: curvature orientation\>\""}],
+       "}"}], ",", " ",
+     RowBox[{"-", "Pi"}], ",", " ", "Pi", ",", " ", "0.01", ",", "\n", "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "nu", ",", " ", "0.0938", ",",
+       " ", "\"\<nu: translation speed (R_E/s)\>\""}], "}"}], ",", " ", "0.",
+     ",", " ", "0.2", ",", " ", "0.001", ",", "\n", "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "tau", ",", " ", "0.", ",", " ", "\"\<tau: elapsed time (s)\>\""}],
+      "}"}], ",", " ",
+     RowBox[{"-", "600."}], ",", " ", "600.", ",", " ", "10.", ",", "\n",
+     "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", " ",
+   RowBox[{"{",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "extent", ",", " ", "100.", ",",
+       " ", "\"\<transverse plot extent (R_E)\>\""}], "}"}], ",", " ", "20.",
+     ",", " ", "200.", ",", " ", "10.", ",", "\n", "  ",
+     RowBox[{"Appearance", " ", "->", " ", "\"\<Labeled\>\""}]}], "}"}], ",",
+   "\n", "\n", " ",
+   RowBox[{"TrackedSymbols", " ", ":>", " ",
+    RowBox[{"{",
+     RowBox[{
+     "alpha", ",", " ", "beta", ",", " ", "lambda", ",", " ", "psi", ",", " ",
+       "nu", ",", " ", "tau", ",", " ", "extent"}], "}"}]}], ",", "\n", " ",
+   RowBox[{"SaveDefinitions", " ", "->", " ", "True"}]}], "\n",
+  "]"}]], "Input",
+ CellChangeTimes->{{3.993263142149417*^9, 3.993263143676942*^9}},
+ CellLabel->
+  "In[165]:=",ExpressionUUID->"27ffb72d-3e95-437a-a6db-426e73daa77d"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`alpha$$ =
+    0.2, $CellContext`beta$$ = -0.1, $CellContext`extent$$ =
+    100., $CellContext`lambda$$ = 0., $CellContext`nu$$ =
+    0.0938, $CellContext`psi$$ = 0.3984073464102069, $CellContext`tau$$ = 0.,
+    Typeset`show$$ = True, Typeset`bookmarkList$$ = {},
+    Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ =
+    1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{{
+       Hold[$CellContext`alpha$$], 0.2, "alpha: tilt along e1"}, -1., 1.,
+      0.02, ControlType -> Manipulator}, {{
+       Hold[$CellContext`beta$$], -0.1, "beta: tilt along e2"}, -1., 1., 0.02,
+       ControlType -> Manipulator}, {{
+       Hold[$CellContext`lambda$$], 0.005,
+       "lambda: curvature coefficient (1/R_E)"}, -0.02, 0.02, 0.0005,
+      ControlType -> Manipulator}, {{
+       Hold[$CellContext`psi$$], 0., "psi: curvature orientation"}, -Pi, Pi,
+      0.01, ControlType -> Manipulator}, {{
+       Hold[$CellContext`nu$$], 0.0938, "nu: translation speed (R_E/s)"}, 0.,
+      0.2, 0.001, ControlType -> Manipulator}, {{
+       Hold[$CellContext`tau$$], 0., "tau: elapsed time (s)"}, -600., 600.,
+      10., ControlType -> Manipulator}, {{
+       Hold[$CellContext`extent$$], 100., "transverse plot extent (R_E)"},
+      20., 200., 10., ControlType -> Manipulator}}, Typeset`size$$ = {
+    633.6, {293.2454031611557, 299.55053011428066`}}, Typeset`update$$ = 0,
+    Typeset`initDone$$, Typeset`skipInitDone$$ = False,
+    Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}},
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm,
+      "Variables" :> {$CellContext`alpha$$ =
+        0.2, $CellContext`beta$$ = -0.1, $CellContext`extent$$ =
+        100., $CellContext`lambda$$ = 0.005, $CellContext`nu$$ =
+        0.0938, $CellContext`psi$$ = 0., $CellContext`tau$$ = 0.},
+      "ControllerVariables" :> {},
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$,
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$,
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$, Typeset`keyframeActionsQ$$,
+        Typeset`keyframeList$$}, "Body" :>
+      Module[{$CellContext`gVec$, $CellContext`cHatLocal$, \
+$CellContext`aPerp$, $CellContext`origin$, $CellContext`qVec$, \
+$CellContext`surfacePoint$, $CellContext`planePoint$, $CellContext`normal$, \
+$CellContext`curvedTangent$, $CellContext`cylinderAxis$, \
+$CellContext`arrowScale$}, $CellContext`gVec$ = $CellContext`alpha$$ \
+$CellContext`e1Hat + $CellContext`beta$$ $CellContext`e2Hat; \
+$CellContext`cHatLocal$ =
+         Cos[$CellContext`psi$$] $CellContext`e1Hat +
+          Sin[$CellContext`psi$$] $CellContext`e2Hat; $CellContext`aPerp$ =
+         Normalize[
+
+           Cross[$CellContext`dHat, $CellContext`cHatLocal$]]; \
+$CellContext`origin$ = $CellContext`nu$$ $CellContext`tau$$ $CellContext`dHat; \
+$CellContext`qVec$[
+           Pattern[$CellContext`u,
+            Blank[]],
+           Pattern[$CellContext`v,
+
+            Blank[]]] := $CellContext`u $CellContext`e1Hat + $CellContext`v \
+$CellContext`e2Hat; $CellContext`surfacePoint$[
+           Pattern[$CellContext`u$,
+            Blank[]],
+           Pattern[$CellContext`v$,
+
+            Blank[]]] := $CellContext`qVec$[$CellContext`u$, $CellContext`v$] + \
+($CellContext`nu$$ $CellContext`tau$$ + Dot[$CellContext`gVec$,
+              $CellContext`qVec$[$CellContext`u$, $CellContext`v$]] + \
+($CellContext`lambda$$/2) Dot[$CellContext`cHatLocal$,
+                $CellContext`qVec$[$CellContext`u$, $CellContext`v$]]^2) \
+$CellContext`dHat; $CellContext`planePoint$[
+           Pattern[$CellContext`u$,
+            Blank[]],
+           Pattern[$CellContext`v$,
+
+            Blank[]]] := $CellContext`qVec$[$CellContext`u$, $CellContext`v$] + \
+($CellContext`nu$$ $CellContext`tau$$ + Dot[$CellContext`gVec$,
+              $CellContext`qVec$[$CellContext`u$, $CellContext`v$]]) \
+$CellContext`dHat; $CellContext`normal$ =
+         Normalize[$CellContext`dHat - $CellContext`gVec$]; \
+$CellContext`curvedTangent$ =
+         Normalize[$CellContext`cHatLocal$ +
+           Dot[$CellContext`gVec$, $CellContext`cHatLocal$] \
+$CellContext`dHat]; $CellContext`cylinderAxis$ =
+         Normalize[$CellContext`aPerp$ +
+           Dot[$CellContext`gVec$, $CellContext`aPerp$] $CellContext`dHat]; \
+$CellContext`arrowScale$ = 0.45 $CellContext`extent$$; Show[
+          ParametricPlot3D[
+           Evaluate[
+            $CellContext`surfacePoint$[$CellContext`u, $CellContext`v]], \
+{$CellContext`u, -$CellContext`extent$$, $CellContext`extent$$}, \
+{$CellContext`v, -$CellContext`extent$$, $CellContext`extent$$},
+           Mesh -> {9, 9}, MeshStyle -> Directive[
+             GrayLevel[0.25],
+             Opacity[0.45]], PlotStyle -> Directive[
+             RGBColor[0.2, 0.55, 0.9],
+             Opacity[0.72]], PlotPoints -> 31, MaxRecursion -> 1],
+          ParametricPlot3D[
+           Evaluate[
+            $CellContext`planePoint$[$CellContext`u, $CellContext`v]], \
+{$CellContext`u, (-0.55) $CellContext`extent$$,
+            0.55 $CellContext`extent$$}, {$CellContext`v, (-0.55) \
+$CellContext`extent$$, 0.55 $CellContext`extent$$}, Mesh -> None, PlotStyle ->
+           Directive[Gray,
+             Opacity[0.22]]],
+          Graphics3D[{Thick, Red,
+
+            Arrow[{$CellContext`origin$, $CellContext`origin$ + \
+$CellContext`arrowScale$ $CellContext`dHat}],
+            Text[
+             Style["propagation  d", 13, Red, Bold], $CellContext`origin$ +
+             1.12 $CellContext`arrowScale$ $CellContext`dHat], Black,
+
+            Arrow[{$CellContext`origin$, $CellContext`origin$ + \
+$CellContext`arrowScale$ $CellContext`normal$}],
+            Text[
+             Style["local normal", 13, Black, Bold], $CellContext`origin$ +
+             1.12 $CellContext`arrowScale$ $CellContext`normal$],
+            Darker[Green],
+
+            Arrow[{$CellContext`origin$, $CellContext`origin$ + \
+$CellContext`arrowScale$ $CellContext`curvedTangent$}],
+            Text[
+             Style["curved direction", 13,
+              Darker[Green], Bold], $CellContext`origin$ +
+             1.12 $CellContext`arrowScale$ $CellContext`curvedTangent$],
+            Purple,
+
+            Arrow[{$CellContext`origin$, $CellContext`origin$ + \
+$CellContext`arrowScale$ $CellContext`cylinderAxis$}],
+            Text[
+             Style["cylinder axis", 13, Purple, Bold], $CellContext`origin$ +
+             1.12 $CellContext`arrowScale$ $CellContext`cylinderAxis$],
+            Orange,
+            PointSize[0.018],
+            Point[$CellContext`origin$]}], Axes -> True,
+          AxesLabel -> {"GSE X  (R_E)", "GSE Y  (R_E)", "GSE Z  (R_E)"},
+          BoxRatios -> {1, 1, 1}, PlotRange -> All, ImageSize -> Large,
+          SphericalRegion -> True]],
+      "Specifications" :> {{{$CellContext`alpha$$, 0.2,
+          "alpha: tilt along e1"}, -1., 1., 0.02, Appearance ->
+         "Labeled"}, {{$CellContext`beta$$, -0.1, "beta: tilt along e2"}, -1.,
+          1., 0.02, Appearance ->
+         "Labeled"}, {{$CellContext`lambda$$, 0.005,
+          "lambda: curvature coefficient (1/R_E)"}, -0.02, 0.02, 0.0005,
+         Appearance ->
+         "Labeled"}, {{$CellContext`psi$$, 0.,
+          "psi: curvature orientation"}, -Pi, Pi, 0.01, Appearance ->
+         "Labeled"}, {{$CellContext`nu$$, 0.0938,
+          "nu: translation speed (R_E/s)"}, 0., 0.2, 0.001, Appearance ->
+         "Labeled"}, {{$CellContext`tau$$, 0.,
+          "tau: elapsed time (s)"}, -600., 600., 10., Appearance ->
+         "Labeled"}, {{$CellContext`extent$$, 100.,
+          "transverse plot extent (R_E)"}, 20., 200., 10., Appearance ->
+         "Labeled"}},
+      "Options" :> {
+       TrackedSymbols :> {$CellContext`alpha$$, $CellContext`beta$$, \
+$CellContext`lambda$$, $CellContext`psi$$, $CellContext`nu$$, \
+$CellContext`tau$$, $CellContext`extent$$}}, "DefaultOptions" :> {}],
+     ImageSizeCache->{
+      686.8100000000002, {442.9628711176987, 449.26799807082364`}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    Initialization:>({$CellContext`e1Hat = {
+        0.008523518321604015, -0.9999636741579272, 0.}, $CellContext`e2Hat = {
+        0.017624807350226594`, 0.00015023082562564362`,
+        0.9998446597329839}, $CellContext`dHat = {-0.9998083395337773, \
+-0.008522194275992023, 0.01762544760945292}}; Typeset`initDone$$ = True),
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{3.993263006758945*^9, 3.993263144190744*^9,
+  3.993629056874834*^9},
+ CellLabel->
+  "Out[165]=",ExpressionUUID->"4f08382b-fd8c-4ccd-9a00-871906144390"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Substituting the 2024-05-10 crossings", "Section",ExpressionUUID->"337bddc5-cfaa-4c1e-b5f4-d068208e68af"],
+
+Cell["\<\
+Positions are in Earth radii, times are seconds relative to crossing A, and \
+the direction vector is dimensionless.\
+\>", "Text",ExpressionUUID->"93f3f7d3-170f-457c-9ca3-60ebe9d562e7"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"data", " ", "=", " ",
+   RowBox[{"<|", "\n", "   ",
+    RowBox[{
+     RowBox[{"aX", " ", "->", " ", "244.54841824600186"}], ",", " ",
+     RowBox[{"aY", " ", "->", " ",
+      RowBox[{"-", "28.30340589573534"}]}], ",", "\n", "   ",
+     RowBox[{"aZ", " ", "->", " ", "20.415505947632486"}], ",", " ",
+     RowBox[{"bX", " ", "->", " ", "223.8181248040138"}], ",", "\n", "   ",
+     RowBox[{"bY", " ", "->", " ", "2.9818124804013797"}], ",", " ",
+     RowBox[{"bZ", " ", "->", " ", "22.363750391972406"}], ",", "\n", "   ",
+     RowBox[{"cX", " ", "->", " ", "215.5655059814453"}], ",", " ",
+     RowBox[{"cY", " ", "->", " ", "100.75765991210938"}], ",", "\n", "   ",
+     RowBox[{"cZ", " ", "->", " ",
+      RowBox[{"-", "1.0215809345245361"}]}], ",", " ",
+     RowBox[{"dX", " ", "->", " ", "46.396865152253795"}], ",", "\n", "   ",
+     RowBox[{"dY", " ", "->", " ", "33.532369395763986"}], ",", " ",
+     RowBox[{"dZ", " ", "->", " ", "4.7296347894965365"}], ",", "\n", "   ",
+     RowBox[{"eX", " ", "->", " ", "11.645155956020696"}], ",", " ",
+     RowBox[{"eY", " ", "->", " ",
+      RowBox[{"-", "18.993471209626843"}]}], ",", "\n", "   ",
+     RowBox[{"eZ", " ", "->", " ",
+      RowBox[{"-", "5.388067992513327"}]}], ",", " ",
+     RowBox[{"tAB", " ", "->", " ", "112.933"}], ",", " ",
+     RowBox[{"tAC", " ", "->", " ", "132.5"}], ",", "\n", "   ",
+     RowBox[{"tAD", " ", "->", " ", "1522."}], ",", " ",
+     RowBox[{"tAE", " ", "->", " ", "1734."}], ",", "\n", "   ",
+     RowBox[{"vXN", " ", "->", " ",
+      RowBox[{"-", "0.9998083395337771"}]}], ",", "\n", "   ",
+     RowBox[{"vYN", " ", "->", " ",
+      RowBox[{"-", "0.008522194275992021"}]}], ",", "\n", "   ",
+     RowBox[{"vZN", " ", "->", " ", "0.017625447609452918"}]}], "\n", "   ",
+    "|>"}]}], ";"}]], "Input",
+ CellLabel->
+  "In[128]:=",ExpressionUUID->"8202d7c5-a7d7-45b3-8579-0b6d3841a997"],
+
+Cell["\<\
+Construct the reference point, projector, transverse basis, and observed \
+spacetime points.\
+\>", "Text",ExpressionUUID->"da7d8ab9-8e00-4441-a7aa-b7c4281da141"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"pAData", " ", "=", " ",
+   RowBox[{
+    RowBox[{"{",
+     RowBox[{"aX", ",", " ", "aY", ",", " ", "aZ"}], "}"}], " ", "/.", " ",
+    "data"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"dHatData", " ", "=", " ",
+    RowBox[{"Normalize", "[",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"vXN", ",", " ", "vYN", ",", " ", "vZN"}], "}"}], " ", "/.",
+      " ", "data"}], "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"{",
+    RowBox[{"e1Data", ",", " ", "e2Data"}], "}"}], " ", "=", " ",
+   RowBox[{"makeTransverseBasis", "[", "dHatData", "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"pPerpData", " ", "=", " ",
+    RowBox[{
+     RowBox[{"IdentityMatrix", "[", "3", "]"}], " ", "-", " ",
+     RowBox[{"Outer", "[",
+      RowBox[{"Times", ",", " ", "dHatData", ",", " ", "dHatData"}],
+      "]"}]}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{"observations", " ", "=", " ",
+   RowBox[{
+    RowBox[{"{", "\n", "    ",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"0.", ",", " ",
+        RowBox[{"{",
+         RowBox[{"aX", ",", " ", "aY", ",", " ", "aZ"}], "}"}]}], "}"}], ",",
+      "\n", "    ",
+      RowBox[{"{",
+       RowBox[{"tAB", ",", " ",
+        RowBox[{"{",
+         RowBox[{"bX", ",", " ", "bY", ",", " ", "bZ"}], "}"}]}], "}"}], ",",
+      "\n", "    ",
+      RowBox[{"{",
+       RowBox[{"tAC", ",", " ",
+        RowBox[{"{",
+         RowBox[{"cX", ",", " ", "cY", ",", " ", "cZ"}], "}"}]}], "}"}], ",",
+      "\n", "    ",
+      RowBox[{"{",
+       RowBox[{"tAD", ",", " ",
+        RowBox[{"{",
+         RowBox[{"dX", ",", " ", "dY", ",", " ", "dZ"}], "}"}]}], "}"}], ",",
+      "\n", "    ",
+      RowBox[{"{",
+       RowBox[{"tAE", ",", " ",
+        RowBox[{"{",
+         RowBox[{"eX", ",", " ", "eY", ",", " ", "eZ"}], "}"}]}], "}"}]}],
+     "\n", "    ", "}"}], " ", "/.", " ", "data"}]}], ";"}]}], "Input",
+ CellLabel->
+  "In[129]:=",ExpressionUUID->"f77e654a-ceaf-49e3-9cd1-c45aad7824c2"],
+
+Cell["\<\
+For each observed spacetime point, project its displacement into the \
+transverse plane and evaluate the scalar surface residual.\
+\>", "Text",ExpressionUUID->"75fbbe29-8303-4da7-8cf3-932da8e6de5e"],
+
+Cell[BoxData[
+ FormBox[
+  RowBox[{
+   SubscriptBox["q", "i"], "=", "pPerpData", ".",
+   RowBox[{"(",
+    RowBox[{
+     SubscriptBox["p", "i"], "-", "pAData"}], ")"}]}],
+  TraditionalForm]], "DisplayFormula",ExpressionUUID->"5ffd6b75-ee59-4831-\
+bb3b-4727acc3347f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"gData", " ", "=", " ",
+   RowBox[{
+    RowBox[{"alpha", " ", "e1Data"}], " ", "+", " ",
+    RowBox[{"beta", " ", "e2Data"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"cHatData", " ", "=", " ",
+    RowBox[{
+     RowBox[{
+      RowBox[{"Cos", "[", "psi", "]"}], " ", "e1Data"}], " ", "+", " ",
+     RowBox[{
+      RowBox[{"Sin", "[", "psi", "]"}], " ", "e2Data"}]}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"frontResidual", "[",
+     RowBox[{"{",
+      RowBox[{"time_", ",", " ", "position_"}], "}"}], "]"}], " ", ":=", " ",
+
+    RowBox[{"Module", "[",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"dp", ",", " ", "q"}], "}"}], ",", "\n", "  ",
+      RowBox[{
+       RowBox[{"dp", " ", "=", " ",
+        RowBox[{"position", " ", "-", " ", "pAData"}]}], ";", "\n", "  ",
+       RowBox[{"q", " ", "=", " ",
+        RowBox[{"pPerpData", " ", ".", " ", "dp"}]}], ";", "\n", "\n", "  ",
+       RowBox[{
+        RowBox[{"dHatData", " ", ".", " ", "dp"}], "\n", "   ", "-", " ",
+        RowBox[{"nu", " ", "time"}], "\n", "   ", "-", " ",
+        RowBox[{"gData", " ", ".", " ", "q"}], "\n", "   ", "-", " ",
+        RowBox[{
+         RowBox[{"lambda", "/", "2"}], " ",
+         RowBox[{
+          RowBox[{"(",
+           RowBox[{"cHatData", " ", ".", " ", "q"}], ")"}], "^",
+          "2"}]}]}]}]}], "\n", "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{"residuals", " ", "=", " ",
+   RowBox[{"frontResidual", " ", "/@", " ",
+    RowBox[{"Rest", "[", "observations", "]"}]}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eqs", " ", "=", " ",
+    RowBox[{"Thread", "[",
+     RowBox[{"residuals", " ", "==", " ", "0"}], "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{"eqs", " ", "//", " ", "Column"}]}], "Input",
+ CellLabel->
+  "In[134]:=",ExpressionUUID->"eafd40ce-9083-412d-b0ef-89dc19b6c431"],
+
+Cell[BoxData[
+ TagBox[GridBox[{
+    {
+     RowBox[{
+      RowBox[{"20.49404023569789`", "\[VeryThinSpace]", "-",
+       RowBox[{"31.459872568525338`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "0.9999636741579272`"}], " ", "alpha"}], "+",
+          RowBox[{"0.00015023082562564362`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"0.2401811035965361`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"0.008523518321604015`", " ", "alpha"}], "+",
+          RowBox[{"0.017624807350226594`", " ", "beta"}]}], ")"}]}], "-",
+       RowBox[{"1.587027811859607`", " ",
+        RowBox[{"(",
+         RowBox[{"0.`", "\[VeryThinSpace]", "+",
+          RowBox[{"0.9998446597329839`", " ", "beta"}]}], ")"}]}], "-",
+       RowBox[{"112.933`", " ", "nu"}], "-",
+       RowBox[{
+        FractionBox["1", "2"], " ", "lambda", " ",
+        SuperscriptBox[
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"31.459872568525338`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "0.9999636741579272`"}], " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.00015023082562564362`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"0.2401811035965361`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{"0.008523518321604015`", " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.017624807350226594`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "+",
+           RowBox[{"1.587027811859607`", " ",
+            RowBox[{"(",
+             RowBox[{"0.`", "\[VeryThinSpace]", "+",
+              RowBox[{"0.9998446597329839`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}]}], ")"}],
+         "2"]}]}], "\[Equal]", "0"}]},
+    {
+     RowBox[{
+      RowBox[{"27.499635658057638`", "\[VeryThinSpace]", "-",
+       RowBox[{"129.29542304544168`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "0.9999636741579272`"}], " ", "alpha"}], "+",
+          RowBox[{"0.00015023082562564362`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"1.4885471994900858`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"0.008523518321604015`", " ", "alpha"}], "+",
+          RowBox[{"0.017624807350226594`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"21.92178026972716`", " ",
+        RowBox[{"(",
+         RowBox[{"0.`", "\[VeryThinSpace]", "+",
+          RowBox[{"0.9998446597329839`", " ", "beta"}]}], ")"}]}], "-",
+       RowBox[{"132.5`", " ", "nu"}], "-",
+       RowBox[{
+        FractionBox["1", "2"], " ", "lambda", " ",
+        SuperscriptBox[
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"129.29542304544168`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "0.9999636741579272`"}], " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.00015023082562564362`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"1.4885471994900858`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{"0.008523518321604015`", " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.017624807350226594`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"21.92178026972716`", " ",
+            RowBox[{"(",
+             RowBox[{"0.`", "\[VeryThinSpace]", "+",
+              RowBox[{"0.9998446597329839`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}]}], ")"}],
+         "2"]}]}], "\[Equal]", "0"}]},
+    {
+     RowBox[{
+      RowBox[{"197.3101282841523`", "\[VeryThinSpace]", "-",
+       RowBox[{"63.51729053735779`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "0.9999636741579272`"}], " ", "alpha"}], "+",
+          RowBox[{"0.00015023082562564362`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"0.8792413607731885`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"0.008523518321604015`", " ", "alpha"}], "+",
+          RowBox[{"0.017624807350226594`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"19.16355048702271`", " ",
+        RowBox[{"(",
+         RowBox[{"0.`", "\[VeryThinSpace]", "+",
+          RowBox[{"0.9998446597329839`", " ", "beta"}]}], ")"}]}], "-",
+       RowBox[{"1522.`", " ", "nu"}], "-",
+       RowBox[{
+        FractionBox["1", "2"], " ", "lambda", " ",
+        SuperscriptBox[
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"63.51729053735779`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "0.9999636741579272`"}], " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.00015023082562564362`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"0.8792413607731885`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{"0.008523518321604015`", " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.017624807350226594`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"19.16355048702271`", " ",
+            RowBox[{"(",
+             RowBox[{"0.`", "\[VeryThinSpace]", "+",
+              RowBox[{"0.9998446597329839`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}]}], ")"}],
+         "2"]}]}], "\[Equal]", "0"}]},
+    {
+     RowBox[{
+      RowBox[{"232.3244833294354`", "\[VeryThinSpace]", "-",
+       RowBox[{"11.289849068111415`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{
+           RowBox[{"-", "0.9999636741579272`"}], " ", "alpha"}], "+",
+          RowBox[{"0.00015023082562564362`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"0.6233063793356381`", " ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"0.008523518321604015`", " ", "alpha"}], "+",
+          RowBox[{"0.017624807350226594`", " ", "beta"}]}], ")"}]}], "+",
+       RowBox[{"29.898396949461997`", " ",
+        RowBox[{"(",
+         RowBox[{"0.`", "\[VeryThinSpace]", "+",
+          RowBox[{"0.9998446597329839`", " ", "beta"}]}], ")"}]}], "-",
+       RowBox[{"1734.`", " ", "nu"}], "-",
+       RowBox[{
+        FractionBox["1", "2"], " ", "lambda", " ",
+        SuperscriptBox[
+         RowBox[{"(",
+          RowBox[{
+           RowBox[{"11.289849068111415`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "0.9999636741579272`"}], " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.00015023082562564362`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"0.6233063793356381`", " ",
+            RowBox[{"(",
+             RowBox[{
+              RowBox[{"0.008523518321604015`", " ",
+               RowBox[{"Cos", "[", "psi", "]"}]}], "+",
+              RowBox[{"0.017624807350226594`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}], "-",
+           RowBox[{"29.898396949461997`", " ",
+            RowBox[{"(",
+             RowBox[{"0.`", "\[VeryThinSpace]", "+",
+              RowBox[{"0.9998446597329839`", " ",
+               RowBox[{"Sin", "[", "psi", "]"}]}]}], ")"}]}]}], ")"}],
+         "2"]}]}], "\[Equal]", "0"}]}
+   },
+   DefaultBaseStyle->"Column",
+   GridBoxAlignment->{"Columns" -> {{Left}}},
+   GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+  "Column"]], "Output",
+ CellChangeTimes->{3.993263007171471*^9},
+ CellLabel->
+  "Out[139]=",ExpressionUUID->"d78a7f46-77b0-4fd8-8765-ff4eead3ae30"]
+}, Open  ]],
+
+Cell["\<\
+Crossing A anchors the surface and reduces to 0 == 0, so Rest removes it. The \
+five supplied crossings therefore give four nontrivial equations for {nu, \
+alpha, beta, lambda, psi}. A sixth crossing supplies the fifth equation \
+needed for a just-determined cylindrical fit.\
+\>", "Text",ExpressionUUID->"3125ced5-95e0-4ffd-9c24-7686b9ecaf56"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"sixthObservation", " ", "=", " ",
+    RowBox[{"{",
+     RowBox[{"tAF", ",", " ",
+      RowBox[{"{",
+       RowBox[{"fX", ",", " ", "fY", ",", " ", "fZ"}], "}"}]}], "}"}]}],
+   ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{"observations6", " ", "=", " ",
+   RowBox[{"Append", "[",
+    RowBox[{"observations", ",", " ", "sixthObservation"}], "]"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"eqs6", " ", "=", " ",
+    RowBox[{"Thread", "[",
+     RowBox[{
+      RowBox[{"(",
+       RowBox[{"frontResidual", " ", "/@", " ",
+        RowBox[{"Rest", "[", "observations6", "]"}]}], ")"}], " ", "==", " ",
+      "0"}], "]"}]}], ";"}], "\n", "\n",
+  RowBox[{"(*", " ",
+   RowBox[{
+    RowBox[{
+    "After", " ", "assigning", " ", "numerical", " ", "values", " ", "to", " ",
+      "tAF"}], ",", " ", "fX", ",", " ", "fY", ",", " ",
+    RowBox[{"and", " ",
+     RowBox[{"fZ", ":"}]}]}], " ", "*)"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{"(*", "\n",
+   RowBox[{
+    RowBox[{"fit", " ", "=", " ",
+     RowBox[{"FindRoot", "[", "\n", "  ",
+      RowBox[{"eqs6", ",", "\n", "  ",
+       RowBox[{"{", "\n", "    ",
+        RowBox[{
+         RowBox[{"{",
+          RowBox[{"nu", ",", " ", "0.094"}], "}"}], ",", "\n", "    ",
+         RowBox[{"{",
+          RowBox[{"alpha", ",", " ", "0."}], "}"}], ",", "\n", "    ",
+         RowBox[{"{",
+          RowBox[{"beta", ",", " ", "0."}], "}"}], ",", "\n", "    ",
+         RowBox[{"{",
+          RowBox[{"lambda", ",", " ", "0.005"}], "}"}], ",", "\n", "    ",
+         RowBox[{"{",
+          RowBox[{"psi", ",", " ", "0."}], "}"}]}], "\n", "  ", "}"}]}], "\n",
+       "]"}]}], ";"}], "\n", "*)"}]}]}], "Input",
+ CellLabel->
+  "In[140]:=",ExpressionUUID->"2ad620ad-4cdd-4dcf-bb8f-1f5b14deaf68"],
+
+Cell["\<\
+With exactly six crossings the model has no redundant residual. Seven or more \
+crossings permit a least-squares fit and a geometric consistency test.\
+\>", "Text",ExpressionUUID->"cda2fb27-2d1b-4d4e-bc76-0905889aa5df"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{808, 1051},
+WindowMargins->{{Automatic, 14}, {1236, Automatic}},
+WindowTitle->"Tilted Parabolic Cylinder Model",
+Magnification->1.1,
+FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"5e94efe8-6449-46bc-9c49-79109a1e33b1"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[621, 23, 109, 0, 172, "Title",ExpressionUUID->"d4ad322c-1703-4821-b544-bfc9791f5648"],
+Cell[733, 25, 248, 4, 61, "Text",ExpressionUUID->"88718d99-8b3c-4ffa-8ad7-a44c35fc641a"],
+Cell[984, 31, 1123, 29, 67, "DisplayFormula",ExpressionUUID->"1f92e70a-a135-4002-be73-e2d3a43269eb"],
+Cell[2110, 62, 275, 4, 61, "Text",ExpressionUUID->"1fd1d0ef-786b-4d18-af47-bf7345a94755"],
+Cell[CellGroupData[{
+Cell[2410, 70, 94, 0, 72, "Section",ExpressionUUID->"4ce762e3-66e4-4b04-98c6-98c0875c171c"],
+Cell[2507, 72, 2209, 61, 324, "Input",ExpressionUUID->"969da9bc-85c2-491a-acd2-242cbf10e7a8"],
+Cell[4719, 135, 120, 0, 37, "Text",ExpressionUUID->"d7176d1e-24d8-4b39-b9f3-c40ae3072d54"],
+Cell[4842, 137, 502, 15, 47, "DisplayFormula",ExpressionUUID->"6ecf7255-88a2-4076-a343-d2cd489f5fcc"],
+Cell[5347, 154, 142, 2, 37, "Text",ExpressionUUID->"ea181610-f60a-4542-aedc-916d6d4b179e"],
+Cell[5492, 158, 255, 6, 28, "DisplayFormula",ExpressionUUID->"c4246b49-a697-4b02-a0a1-0a8d742b5c8c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5784, 169, 94, 0, 72, "Section",ExpressionUUID->"e800930e-1af8-4ddb-bcc4-29ca162a92d0"],
+Cell[5881, 171, 336, 5, 85, "Text",ExpressionUUID->"8ec0eb72-5e12-4718-a217-70cbe4aa180f"],
+Cell[CellGroupData[{
+Cell[6242, 180, 12959, 301, 2076, "Input",ExpressionUUID->"27ffb72d-3e95-437a-a6db-426e73daa77d"],
+Cell[19204, 483, 9162, 179, 910, "Output",ExpressionUUID->"4f08382b-fd8c-4ccd-9a00-871906144390"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[28415, 668, 111, 0, 72, "Section",ExpressionUUID->"337bddc5-cfaa-4c1e-b5f4-d068208e68af"],
+Cell[28529, 670, 195, 3, 61, "Text",ExpressionUUID->"93f3f7d3-170f-457c-9ca3-60ebe9d562e7"],
+Cell[28727, 675, 1937, 35, 324, "Input",ExpressionUUID->"8202d7c5-a7d7-45b3-8579-0b6d3841a997"],
+Cell[30667, 712, 171, 3, 37, "Text",ExpressionUUID->"da7d8ab9-8e00-4441-a7aa-b7c4281da141"],
+Cell[30841, 717, 2020, 59, 301, "Input",ExpressionUUID->"f77e654a-ceaf-49e3-9cd1-c45aad7824c2"],
+Cell[32864, 778, 208, 3, 61, "Text",ExpressionUUID->"75fbbe29-8303-4da7-8cf3-932da8e6de5e"],
+Cell[33075, 783, 267, 8, 70, "DisplayFormula",ExpressionUUID->"5ffd6b75-ee59-4831-bb3b-4727acc3347f"],
+Cell[CellGroupData[{
+Cell[33367, 795, 1890, 51, 70, "Input",ExpressionUUID->"eafd40ce-9083-412d-b0ef-89dc19b6c431"],
+Cell[35260, 848, 7929, 189, 70, "Output",ExpressionUUID->"d78a7f46-77b0-4fd8-8765-ff4eead3ae30"]
+}, Open  ]],
+Cell[43204, 1040, 354, 5, 70, "Text",ExpressionUUID->"3125ced5-95e0-4ffd-9c24-7686b9ecaf56"],
+Cell[43561, 1047, 1802, 49, 70, "Input",ExpressionUUID->"2ad620ad-4cdd-4dcf-bb8f-1f5b14deaf68"],
+Cell[45366, 1098, 229, 3, 70, "Text",ExpressionUUID->"cda2fb27-2d1b-4d4e-bc76-0905889aa5df"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
