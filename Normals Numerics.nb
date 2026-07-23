@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     56724,       1336]
-NotebookOptionsPosition[     54206,       1286]
-NotebookOutlinePosition[     54601,       1302]
-CellTagsIndexPosition[     54558,       1299]
+NotebookDataLength[     57316,       1364]
+NotebookOptionsPosition[     54704,       1313]
+NotebookOutlinePosition[     55094,       1329]
+CellTagsIndexPosition[     55051,       1326]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -83,7 +83,8 @@ Cell[BoxData[{
         " ", "initializationBoxes"}], "]"}]}]}], "\n", "]"}]}], ";"}], "\n",
  RowBox[{
   RowBox[{"loadNormalsSolver", "[", "]"}], ";"}]}], "Input",
- CellLabel->"In[1]:=",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
+ CellLabel->
+  "In[431]:=",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -111,17 +112,18 @@ Cell[BoxData[{
    RowBox[{"Import", "[",
     RowBox[{"shockParamsPath", ",", " ", "\"\<RawJSON\>\""}], "]"}]}],
   ";"}]}], "Input",
- CellLabel->"In[4]:=",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
+ CellLabel->
+  "In[434]:=",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
 }, Open  ]],
 
 Cell[CellGroupData[{
 
-Cell["Fixed Spacecraft Sets", "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
+Cell["Spacecraft Sets", "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
 
 Cell["\<\
-The plane fit uses ACE, Wind, DSCOVR, and THEMIS-B. The sphere adds MMS. Each \
-set is sorted by crossing time before solving; THEMIS-C and STEREO are never \
-considered.\
+Configure the plane and sphere crossing sets independently. Use \"mms\" in \
+either set to select the first available MMS probe (MMS1 through MMS4) for \
+that event. Each set is sorted by crossing time before solving.\
 \>", "Text",ExpressionUUID->"82bf79d9-c1d1-4461-bd28-aa470c183292"],
 
 Cell[BoxData[{
@@ -133,16 +135,30 @@ Cell[BoxData[{
       RowBox[{"Keys", "[", "shockParams", "]"}], ",", " ", "StringQ"}],
      "]"}]}]}], ";"}], "\n",
  RowBox[{
-  RowBox[{"planeSatellites", " ", "=", " ",
-   RowBox[{"{",
-    RowBox[{"\"\<ace\>\"", ",", " ", "\"\<wind\>\"", ",",
-     " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\""}], "}"}]}], ";"}], "\n",
+  RowBox[{
+   RowBox[{"planeSatellites", " ", "=", " ",
+    RowBox[{"{",
+     RowBox[{"\"\<mms\>\"", ",", " ", "\"\<wind\>\"", ",",
+      " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\""}], "}"}]}], ";"}],
+  "\[IndentingNewLine]",
+  RowBox[{"(*",
+   RowBox[{
+    RowBox[{"planeSatellites", " ", "=", " ",
+     RowBox[{"{",
+      RowBox[{"\"\<ace\>\"", ",", " ", "\"\<wind\>\"", ",",
+       " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\""}], "}"}]}], ";"}],
+   "*)"}]}], "\n",
  RowBox[{
   RowBox[{"sphericalSatellites", " ", "=", " ",
    RowBox[{"{",
     RowBox[{"\"\<ace\>\"", ",", " ", "\"\<wind\>\"", ",",
      " ", "\"\<dscovr\>\"", ",", " ", "\"\<themis_b\>\"", ",",
-     " ", "\"\<mms1\>\""}], "}"}]}], ";"}], "\n",
+     " ", "\"\<mms\>\""}], "}"}]}], ";"}], "\n",
+ RowBox[{
+  RowBox[{"mmsSatellites", " ", "=", " ",
+   RowBox[{"{",
+    RowBox[{"\"\<mms1\>\"", ",", " ", "\"\<mms2\>\"", ",", " ", "\"\<mms3\>\"",
+      ",", " ", "\"\<mms4\>\""}], "}"}]}], ";"}], "\n",
  RowBox[{
   RowBox[{
   "propagationDirectionSource", " ", "=", " ", "\"\<UpstreamVelocity\>\""}],
@@ -157,7 +173,10 @@ Cell[BoxData[{
      " ",
      RowBox[{"\"\<themis_b\>\"", " ", "->", " ", "\"\<THEMIS-B\>\""}], ",",
      " ",
-     RowBox[{"\"\<mms1\>\"", " ", "->", " ", "\"\<MMS\>\""}]}], "|>"}]}],
+     RowBox[{"\"\<mms1\>\"", " ", "->", " ", "\"\<MMS1\>\""}], ",", " ",
+     RowBox[{"\"\<mms2\>\"", " ", "->", " ", "\"\<MMS2\>\""}], ",", " ",
+     RowBox[{"\"\<mms3\>\"", " ", "->", " ", "\"\<MMS3\>\""}], ",", " ",
+     RowBox[{"\"\<mms4\>\"", " ", "->", " ", "\"\<MMS4\>\""}]}], "|>"}]}],
   ";"}], "\n",
  RowBox[{
   RowBox[{"ClearAll", "[", "satelliteNames", "]"}], ";"}], "\n",
@@ -170,7 +189,11 @@ Cell[BoxData[{
       RowBox[{"Lookup", "[",
        RowBox[{"satelliteLabels", ",", " ", "#", ",", " ", "#"}], "]"}], " ",
       "&"}], ")"}], " ", "/@", " ", "satellites"}]}], ";"}]}], "Input",
- CellLabel->"In[7]:=",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
+ CellChangeTimes->{{3.993805718020355*^9, 3.993805768729566*^9}, {
+  3.993806512970055*^9, 3.993806513169402*^9}, {3.993807199253377*^9,
+  3.993807205141917*^9}},
+ CellLabel->
+  "In[437]:=",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -280,7 +303,8 @@ km/s.\>\""}], ";"}], "\n",
             "eventKey"}], "]"}], ";", " ",
          RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
       "velocity"}]}], "\n", "]"}]}], ";"}]}], "Input",
- CellLabel->"In[14]:=",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
+ CellLabel->
+  "In[445]:=",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
 
 Cell[BoxData[{
  RowBox[{
@@ -454,7 +478,8 @@ the `2` fit.\>\""}], ";"}], "\n",
          RowBox[{"Normalize", "[",
           RowBox[{"N", "[", "direction", "]"}], "]"}]}]}], "|>"}]}]}], "\n",
     " ", "]"}]}], ";"}]}], "Input",
- CellLabel->"In[18]:=",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
+ CellLabel->
+  "In[449]:=",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
 
 Cell[BoxData[{
  RowBox[{
@@ -466,9 +491,9 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{
    RowBox[{"eventParameters", "::", "satellites"}], " ", "=",
-   " ", "\"\<Event `1` does not have enough spacecraft for the fixed normal \
-fits. Plane requires ACE, Wind, DSCOVR, THEMIS-B; sphere also requires MMS. \
-Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
+   " ", "\"\<Event `1` does not have enough spacecraft for the selected \
+normal fits. Missing selected plane crossings: `2`. Missing selected sphere \
+crossings: `3`.\>\""}], ";"}], "\n",
  RowBox[{
   RowBox[{
    RowBox[{"eventParameters", "[", "eventKey_String", "]"}], " ", ":=", " ",
@@ -476,9 +501,10 @@ Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
     RowBox[{
      RowBox[{"{",
       RowBox[{
-      "event", ",", " ", "missingPlane", ",", " ", "missingSpherical", ",",
-       " ", "direction", ",", " ", "planar", ",", " ", "spherical"}], "}"}], ",",
-      "\n", " ",
+      "event", ",", " ", "missingPlane", ",", " ", "availableMMS", ",", " ",
+       "planarSelection", ",", " ", "sphericalSelection", ",", " ",
+       "missingSpherical", ",", " ", "direction", ",", " ", "planar", ",",
+       " ", "spherical"}], "}"}], ",", "\n", " ",
      RowBox[{
       RowBox[{"If", "[",
        RowBox[{
@@ -493,13 +519,28 @@ Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
          RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", " ",
       RowBox[{"event", " ", "=", " ",
        RowBox[{"shockParams", "[", "eventKey", "]"}]}], ";", "\n", " ",
+      RowBox[{"availableMMS", " ", "=", " ",
+       RowBox[{"FirstCase", "[",
+        RowBox[{"mmsSatellites", ",", " ",
+         RowBox[{"satellite_", " ", "/;", " ",
+          RowBox[{"KeyExistsQ", "[",
+           RowBox[{"event", ",", " ", "satellite"}], "]"}]}], ",",
+         " ", "\"\<MMS\>\""}], "]"}]}], ";", "\n", " ",
+      RowBox[{"planarSelection", " ", "=", " ",
+       RowBox[{"planeSatellites", " ", "/.", " ",
+        RowBox[{"\"\<mms\>\"", " ", "->", " ", "availableMMS"}]}]}], ";",
+      "\n", " ",
+      RowBox[{"sphericalSelection", " ", "=", " ",
+       RowBox[{"sphericalSatellites", " ", "/.", " ",
+        RowBox[{"\"\<mms\>\"", " ", "->", " ", "availableMMS"}]}]}], ";",
+      "\n", " ",
       RowBox[{"missingPlane", " ", "=", " ",
        RowBox[{"Complement", "[",
-        RowBox[{"planeSatellites", ",", " ",
+        RowBox[{"planarSelection", ",", " ",
          RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", "\n", " ",
       RowBox[{"missingSpherical", " ", "=", " ",
        RowBox[{"Complement", "[",
-        RowBox[{"sphericalSatellites", ",", " ",
+        RowBox[{"sphericalSelection", ",", " ",
          RowBox[{"Keys", "[", "event", "]"}]}], "]"}]}], ";", "\n", " ",
       RowBox[{"If", "[",
        RowBox[{
@@ -527,7 +568,7 @@ Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
       RowBox[{"planar", " ", "=", " ",
        RowBox[{"modelParameters", "[",
         RowBox[{
-        "eventKey", ",", " ", "\"\<planar\>\"", ",", " ", "planeSatellites", ",",
+        "eventKey", ",", " ", "\"\<planar\>\"", ",", " ", "planarSelection", ",",
           " ", "direction"}], "]"}]}], ";", "\n", " ",
       RowBox[{"If", "[",
        RowBox[{
@@ -537,7 +578,7 @@ Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
        RowBox[{"modelParameters", "[",
         RowBox[{
         "eventKey", ",", " ", "\"\<spherical\>\"", ",", " ",
-         "sphericalSatellites", ",", " ", "direction"}], "]"}]}], ";", "\n",
+         "sphericalSelection", ",", " ", "direction"}], "]"}]}], ";", "\n",
       " ",
       RowBox[{"If", "[",
        RowBox[{
@@ -548,7 +589,8 @@ Missing plane: `2`. Missing sphere: `3`.\>\""}], ";"}], "\n",
         RowBox[{"\"\<planar\>\"", " ", "->", " ", "planar"}], ",", " ",
         RowBox[{"\"\<spherical\>\"", " ", "->", " ", "spherical"}]}],
        "|>"}]}]}], "\n", "]"}]}], ";"}]}], "Input",
- CellLabel->"In[22]:=",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
+ CellLabel->
+  "In[453]:=",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -683,7 +725,8 @@ Cell[BoxData[{
           RowBox[{"speedKm", " ", "direction"}], "]"}]}], ",", "\n", "    ",
         RowBox[{"\"\<surface\>\"", " ", "->", " ", "surface"}]}], "|>"}]}]}],
     "\n", " ", "]"}]}], ";"}]}], "Input",
- CellLabel->"In[26]:=",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
+ CellLabel->
+  "In[457]:=",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
 
 Cell[BoxData[{
  RowBox[{
@@ -793,7 +836,8 @@ results can be written.\>\""}], ";"}], "\n",
        "shockNormalsPath", ",", " ", "catalog", ",", " ", "\"\<RawJSON\>\""}],
         "]"}], ";", "\n", "  ", "writtenRecords"}]}], "\n", " ", "]"}]}],
   ";"}]}], "Input",
- CellLabel->"In[29]:=",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
+ CellLabel->
+  "In[460]:=",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -948,7 +992,8 @@ messages above.\>\"", ",", " ",
         RowBox[{"Alignment", " ", "->", " ", "Left"}], ",", " ",
         RowBox[{"Frame", " ", "->", " ", "All"}]}], "]"}]}]}], "\n", " ",
     "]"}]}], ";"}]}], "Input",
- CellLabel->"In[32]:=",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
+ CellLabel->
+  "In[463]:=",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
 
 Cell[CellGroupData[{
 
@@ -1020,8 +1065,8 @@ Cell[BoxData[
               "\n", "      ",
              RowBox[{"Style", "[",
 
-              RowBox[{"\"\<This event cannot supply the fixed fits; see the \
-message above.\>\"", ",", " ",
+              RowBox[{"\"\<This event cannot supply the selected crossings; \
+see the message above.\>\"", ",", " ",
                RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}], ",",
            "\n", "    ",
           RowBox[{"Button", "[",
@@ -1104,13 +1149,170 @@ solves failed.\>\"", ",", " ",
           "}"}], ",", "\n", "   ",
         RowBox[{"Spacings", " ", "->", " ", "1.5"}]}], "]"}]}]}], "\n", " ",
     "]"}]}], "\n", "]"}]], "Input",
- CellLabel->"In[35]:=",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"]
+ CellLabel->
+  "In[466]:=",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"],
+
+Cell[BoxData[
+ DynamicModuleBox[{$CellContext`selectedEvent$$ =
+  "2023-01-23 02-59-00", $CellContext`selectedParameters$$ = <|
+  "planar" -> <|
+    "event" -> "2023-01-23 02-59-00", "model" -> "planar",
+     "satellites" -> {"wind", "dscovr", "themis_b", "mms1"},
+     "positionsRE" -> {{257.3970947265625, -22.43522834777832,
+      12.858624458312988`}, {
+      218.0617412724992, -20.411936085293195`, -26.641275284571964`}, {
+      55.293635796191595`, 15.917481889624657`, -4.739690536861955}, {
+      14.452648188988197`, 12.463143340430452`, -9.116003203814131}},
+     "relativeTimesSeconds" -> {
+       Rational[741, 2],
+       Rational[585357, 250],
+       Rational[5443, 2]},
+     "propagationDirectionGSE" -> {-0.9999137397964782, 0.007968419071860876,
+      0.010441133258223306`}|>,
+   "spherical" -> <|
+    "event" -> "2023-01-23 02-59-00", "model" -> "spherical",
+     "satellites" -> {"wind", "dscovr", "ace", "themis_b", "mms1"},
+     "positionsRE" -> {{257.3970947265625, -22.43522834777832,
+      12.858624458312988`}, {
+      218.0617412724992, -20.411936085293195`, -26.641275284571964`}, {
+      233.7322044528065, 36.64361868924428, -12.326748196926935`}, {
+      55.293635796191595`, 15.917481889624657`, -4.739690536861955}, {
+      14.452648188988197`, 12.463143340430452`, -9.116003203814131}},
+     "relativeTimesSeconds" -> {
+       Rational[741, 2],
+       Rational[47601, 125],
+       Rational[585357, 250],
+       Rational[5443, 2]},
+     "propagationDirectionGSE" -> {-0.9999137397964782, 0.007968419071860876,
+      0.010441133258223306`}|>|>, $CellContext`selectedResult$$ = <|
+  "planar" -> <|
+    "speedREPerSecond" -> 0.09805463718942939, "speedKmPerSecond" ->
+     625.3924759941806,
+     "normalGSE" -> {-0.773211934528588, 0.6283351528755,
+      0.08566352761520019}, "planeOffsetRE" -> -212.01783305788345`,
+     "maxResidualRE" -> 2.3785284703759552`*^-14|>,
+   "spherical" -> $Failed|>, $CellContext`selectedWrite$$ = $Failed},
+  TagBox[GridBox[{
+     {
+      TagBox[GridBox[{
+         {
+          StyleBox["\<\"Event\"\>",
+           StripOnInput->False,
+           FontWeight->Bold],
+
+          PopupMenuBox[
+           Dynamic[$CellContext`selectedEvent$$, \
+($CellContext`selectedEvent$$ = #; $CellContext`selectedParameters$$ = \
+$CellContext`eventParameters[#]; $CellContext`selectedResult$$ =
+             Missing["NotSolved"]; $CellContext`selectedWrite$$ =
+             Missing["NotWritten"])& ], {
+           "2021-11-03 19-32-00"->"\<\"2021-11-03 19-32-00\"\>",
+           "2022-01-16 19-09-00"->"\<\"2022-01-16 19-09-00\"\>",
+           "2022-02-01 22-20-00"->"\<\"2022-02-01 22-20-00\"\>",
+           "2022-04-09 22-00-00"->"\<\"2022-04-09 22-00-00\"\>",
+           "2022-11-24 19-10-00"->"\<\"2022-11-24 19-10-00\"\>",
+           "2023-01-14 21-50-00"->"\<\"2023-01-14 21-50-00\"\>",
+           "2023-01-23 02-59-00"->"\<\"2023-01-23 02-59-00\"\>",
+           "2023-02-26 19-23-00"->"\<\"2023-02-26 19-23-00\"\>",
+           "2023-07-16 19-20-00"->"\<\"2023-07-16 19-20-00\"\>",
+           "2023-09-24 19-51-00"->"\<\"2023-09-24 19-51-00\"\>",
+           "2024-04-29 18-31-00"->"\<\"2024-04-29 18-31-00\"\>",
+           "2024-05-10 16-36-00"->"\<\"2024-05-10 16-36-00\"\>",
+           "2024-06-28 07-00-00"->"\<\"2024-06-28 07-00-00\"\>",
+           "2024-08-03 22-00-00"->"\<\"2024-08-03 22-00-00\"\>",
+           "2024-10-06 07-39-00"->"\<\"2024-10-06 07-39-00\"\>",
+           "2025-06-01 19-19-00"->"\<\"2025-06-01 19-19-00\"\>",
+           "Custom"->"\<\"Custom\"\>"}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]},
+     {
+      DynamicBox[ToBoxes[
+        If[
+         AssociationQ[$CellContext`selectedParameters$$],
+         $CellContext`eventInputSummary[$CellContext`selectedParameters$$],
+         Style[
+         "This event cannot supply the selected crossings; see the message \
+above.",
+          Darker[Red]]], StandardForm],
+       ImageSizeCache->{543.81396484375, {34.896533203125, 40.628466796875}}]},
+     {
+      ButtonBox["\<\"Solve and write selected event\"\>",
+       Appearance->Automatic,
+       ButtonFunction:>($CellContext`selectedResult$$ = \
+$CellContext`solveShockNormals[$CellContext`selectedParameters$$]; \
+$CellContext`selectedWrite$$ = If[
+           And[
+            AssociationQ[$CellContext`selectedResult$$],
+            AssociationQ[
+             Lookup[$CellContext`selectedResult$$, "planar",
+              Missing["planar"]]],
+            AssociationQ[
+             Lookup[$CellContext`selectedResult$$, "spherical",
+              Missing["spherical"]]]],
+           $CellContext`writeShockSurfaceResults[$CellContext`selectedEvent$$,\
+ $CellContext`selectedParameters$$, $CellContext`selectedResult$$], $Failed]),
+
+       Enabled->Dynamic[
+         AssociationQ[$CellContext`selectedParameters$$]],
+       Evaluator->Automatic,
+       Method->"Queued"]},
+     {
+      DynamicBox[ToBoxes[
+        Which[
+         AssociationQ[$CellContext`selectedResult$$],
+         $CellContext`eventResultSummary[$CellContext`selectedParameters$$, \
+$CellContext`selectedResult$$], $CellContext`selectedResult$$ ===
+         Missing["NotSolved"],
+         Style["Use the button to calculate and store both fits.", Gray],
+         True,
+         Style["The selected solve failed; see the messages above.",
+          Darker[Red]]], StandardForm],
+       ImageSizeCache->{530.4, {3.5489349365234375`, 12.791915893554688`}}]},
+     {
+      DynamicBox[ToBoxes[
+        Which[
+         AssociationQ[$CellContext`selectedWrite$$],
+         Style["Wrote both fits to Kinematic Shock Normals (Wolfram).json.",
+          Darker[Green]], $CellContext`selectedWrite$$ ===
+         Missing["NotWritten"], Nothing, True,
+         Style[
+         "Results were not written because one or both solves failed.",
+          Darker[Red]]], StandardForm],
+       ImageSizeCache->{460.20000000000005`, {0.156, 9.424999999999999}}]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Left}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+    GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{1.5}}}],
+   "Column"],
+  DynamicModuleValues:>{}]], "Output",
+ CellChangeTimes->{
+  3.9938045199885178`*^9, {3.9938057623972692`*^9, 3.99380576993887*^9},
+   3.993806492254868*^9, {3.9938071942993383`*^9, 3.993807210750753*^9},
+   3.993808450610908*^9},
+ CellLabel->
+  "Out[466]=",ExpressionUUID->"803e038b-927b-431b-a9ed-a0d07b0920b7"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "solveSphericalShock", "branch",
+   "\"Expected one positive, subluminal, front-facing real spherical \
+solution; found \\!\\(\\*RowBox[{\\\"0\\\"}]\\).\"", 2, 467, 13,
+   18487595464852112908, "Local", "Global`solveSphericalShock"},
+  "MessageTemplate2",
+  BaseStyle->"MSG"]], "Message",
+ CellChangeTimes->{3.993808454385283*^9},
+ CellLabel->"",ExpressionUUID->"54829301-5613-4737-9061-425e30e3e2af"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
 },
-WindowSize->{958, 896},
-WindowMargins->{{Automatic, 38}, {Automatic, -1011}},
+WindowSize->{707, 794},
+WindowMargins->{{Automatic, 0}, {1, Automatic}},
 FrontEndVersion->"15.0 for Mac OS X ARM (64-bit) (May 19, 2026)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"8642a0c0-863f-41bc-be3b-248d5cf85bdf"
@@ -1131,40 +1333,39 @@ Cell[576, 22, 88, 0, 96, "Title",ExpressionUUID->"d3410f31-fb32-47d9-8088-84bd6d
 Cell[667, 24, 258, 4, 55, "Text",ExpressionUUID->"9acd418c-7924-410e-82a6-312d81011e3a"],
 Cell[CellGroupData[{
 Cell[950, 32, 85, 0, 66, "Section",ExpressionUUID->"38c62929-d52e-430c-b386-669222d96526"],
-Cell[1038, 34, 2072, 51, 213, "Input",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
+Cell[1038, 34, 2077, 52, 213, "Input",ExpressionUUID->"32276451-25eb-46dd-8e78-81335f2c842e"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[3147, 90, 88, 0, 66, "Section",ExpressionUUID->"e7bfc0a9-0d90-474c-b9e5-e2b04f036e51"],
-Cell[3238, 92, 835, 21, 90, "Input",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
+Cell[3152, 91, 88, 0, 66, "Section",ExpressionUUID->"e7bfc0a9-0d90-474c-b9e5-e2b04f036e51"],
+Cell[3243, 93, 840, 22, 90, "Input",ExpressionUUID->"c2e5a45f-ebab-4942-80d1-db732707107c"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[4110, 118, 95, 0, 66, "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
-Cell[4208, 120, 249, 4, 55, "Text",ExpressionUUID->"82bf79d9-c1d1-4461-bd28-aa470c183292"],
-Cell[4460, 126, 1790, 46, 172, "Input",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
+Cell[4120, 120, 89, 0, 66, "Section",ExpressionUUID->"caf730bc-1957-40e9-84f7-fecd786dc231"],
+Cell[4212, 122, 296, 4, 55, "Text",ExpressionUUID->"82bf79d9-c1d1-4461-bd28-aa470c183292"],
+Cell[4511, 128, 2678, 67, 213, "Input",ExpressionUUID->"c2a59aab-fa66-4da5-a956-21b2a7c5dc3f"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[6287, 177, 90, 0, 66, "Section",ExpressionUUID->"6a6dd5d7-3622-4dca-b6b7-49c205773616"],
-Cell[6380, 179, 4173, 103, 376, "Input",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
-Cell[10556, 284, 7215, 172, 580, "Input",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
-Cell[17774, 458, 4078, 92, 478, "Input",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
+Cell[7226, 200, 90, 0, 66, "Section",ExpressionUUID->"6a6dd5d7-3622-4dca-b6b7-49c205773616"],
+Cell[7319, 202, 4177, 104, 376, "Input",ExpressionUUID->"1702f4a4-eeee-489a-b1cc-a6b4f26654ee"],
+Cell[11499, 308, 7219, 173, 580, "Input",ExpressionUUID->"3a2f9c15-34bf-4a9e-bc19-f456ee2df593"],
+Cell[18721, 483, 4876, 109, 560, "Input",ExpressionUUID->"ff94720a-06a0-44c0-a59a-827cd2aee8fb"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[21889, 555, 87, 0, 66, "Section",ExpressionUUID->"26910323-b76c-4bb0-b2dc-165039b4494f"],
-Cell[21979, 557, 236, 4, 55, "Text",ExpressionUUID->"3c300434-ed4a-41bf-a826-a0a647883255"],
-Cell[22218, 563, 5442, 122, 478, "Input",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
-Cell[27663, 687, 4810, 108, 499, "Input",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
+Cell[23634, 597, 87, 0, 66, "Section",ExpressionUUID->"26910323-b76c-4bb0-b2dc-165039b4494f"],
+Cell[23724, 599, 236, 4, 55, "Text",ExpressionUUID->"3c300434-ed4a-41bf-a826-a0a647883255"],
+Cell[23963, 605, 5446, 123, 478, "Input",ExpressionUUID->"f1ea4a01-732f-49b3-9e7e-7b6617f564ef"],
+Cell[29412, 730, 4814, 109, 499, "Input",ExpressionUUID->"00ce5f85-f81f-4e54-9020-9e9c4dbc4834"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[32510, 800, 81, 0, 66, "Section",ExpressionUUID->"516c17da-e177-4b03-8e6f-18fa20fde077"],
-Cell[32594, 802, 6203, 148, 478, "Input",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
+Cell[34263, 844, 81, 0, 66, "Section",ExpressionUUID->"516c17da-e177-4b03-8e6f-18fa20fde077"],
+Cell[34347, 846, 6207, 149, 478, "Input",ExpressionUUID->"9c85b2dd-94ad-4f69-af1d-33ee52312f08"],
 Cell[CellGroupData[{
-Cell[38822, 954, 6939, 152, 601, "Input",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"],
-Cell[45764, 1108, 8402, 173, 366, "Output",ExpressionUUID->"3a60cb5b-a25a-4e1a-92c0-6e0840fadb0a"]
+Cell[40579, 999, 6951, 153, 1030, "Input",ExpressionUUID->"7808390b-c90c-422d-b06f-653d130812dd"],
+Cell[47533, 1154, 6694, 143, 252, "Output",ExpressionUUID->"803e038b-927b-431b-a9ed-a0d07b0920b7"],
+Cell[54230, 1299, 434, 9, 26, "Message",ExpressionUUID->"54829301-5613-4737-9061-425e30e3e2af"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
 }
 ]
 *)
-
-(* End of internal cache information *)

@@ -345,6 +345,40 @@
 					"offset_re":-2.2300625765570933e2,
 					"max_residual_re":1.9658053020733693e-14
 				}
+			},
+			"dscovr,wind,themis_b,mms1":{
+				"satellite_string":"dscovr,wind,themis_b,mms1",
+				"satellites":[
+					"dscovr",
+					"wind",
+					"themis_b",
+					"mms1"
+				],
+				"reference_satellite":"dscovr",
+				"reference_time":"2024-05-10T16:35:10+00:00",
+				"radial_propagation":false,
+				"propagation_direction_gse":[
+					-0.999557530082826,
+					-9.313752859773421e-4,
+					-2.9730062139140853e-2
+				],
+				"speed_re_s":0.12652728623647086,
+				"speed_km_s":8.069910316162111e2,
+				"shock_velocity_gse_km_s":[
+					-8.066339623612918e2,
+					-0.751611502852699,
+					-2.3991893515679337e1
+				],
+				"surface":{
+					"type":"plane",
+					"normal_gse":[
+						-0.8301351005827452,
+						1.1800801875971009e-2,
+						0.5574374008402733
+					],
+					"offset_re":-1.9196186209109936e2,
+					"max_residual_re":9.919082596551641e-14
+				}
 			}
 		},
 		"spherical":{
@@ -365,28 +399,28 @@
 					-9.313752859773421e-4,
 					-2.9730062139140853e-2
 				],
-				"speed_re_s":0.10416082167296173,
-				"speed_km_s":6.643377206301499e2,
+				"speed_re_s":0.104450978479015,
+				"speed_km_s":6.661883407391576e2,
 				"shock_velocity_gse_km_s":[
-					-6.640437711739271e2,
-					-0.6187477345374415,
-					-1.9750801715709553e1
+					-6.658935724392085e2,
+					-0.6204713563707039,
+					-1.9805820766546297e1
 				],
 				"surface":{
 					"type":"sphere",
 					"center_at_reference_re":[
-						2.923544514275222e2,
-						1.5483542086162627e1,
-						-1.5748841706024606e2
+						2.9312999942446027e2,
+						1.5622038923604283e1,
+						-1.570905688687211e2
 					],
-					"radius_re":1.8934761536316014e2,
-					"sigma_re2":3.585251944371524e4,
+					"radius_re":1.8920365041162634e2,
+					"sigma_re2":3.579802132908491e4,
 					"normal_gse_at_reference":[
-						-0.2524776089196081,
-						-0.23125164738893905,
-						0.9395625219080098
+						-0.25676873079755935,
+						-0.23215960539755243,
+						0.9381746833645979
 					],
-					"max_squared_distance_residual_re2":1.4551915228366852e-11
+					"max_squared_distance_residual_re2":1.760781742632389e-9
 				}
 			}
 		}
@@ -582,6 +616,168 @@
 						-0.8971704999204457
 					],
 					"max_squared_distance_residual_re2":4.656612873077393e-10
+				}
+			}
+		}
+	},
+	"2022-02-01 22-20-00":{
+		"planar":{
+			"wind,ace,dscovr,themis_b":{
+				"satellite_string":"wind,ace,dscovr,themis_b",
+				"satellites":[
+					"wind",
+					"ace",
+					"dscovr",
+					"themis_b"
+				],
+				"reference_satellite":"wind",
+				"reference_time":"2022-02-01T21:27:43.500000+00:00",
+				"radial_propagation":false,
+				"propagation_direction_gse":[
+					-0.9945095290127481,
+					9.45672127267026e-2,
+					-4.4808916299595554e-2
+				],
+				"speed_re_s":8.030903719591721e-2,
+				"speed_km_s":5.1221103923556e2,
+				"shock_velocity_gse_km_s":[
+					-5.09398759385287e2,
+					4.843837030835461e1,
+					-2.295162158483506e1
+				],
+				"surface":{
+					"type":"plane",
+					"normal_gse":[
+						-0.9662541869121647,
+						0.1453789750203189,
+						-0.2126447739700012
+					],
+					"offset_re":-2.5508013611216506e2,
+					"max_residual_re":2.689494188435206e-14
+				}
+			}
+		},
+		"spherical":{
+			"wind,ace,dscovr,themis_b,mms3":{
+				"satellite_string":"wind,ace,dscovr,themis_b,mms3",
+				"satellites":[
+					"wind",
+					"ace",
+					"dscovr",
+					"themis_b",
+					"mms3"
+				],
+				"reference_satellite":"wind",
+				"reference_time":"2022-02-01T21:27:43.500000+00:00",
+				"radial_propagation":false,
+				"propagation_direction_gse":[
+					-0.9945095290127481,
+					9.45672127267026e-2,
+					-4.4808916299595554e-2
+				],
+				"speed_re_s":7.74696796957293e-2,
+				"speed_km_s":4.941016170993614e2,
+				"shock_velocity_gse_km_s":[
+					-4.913887665059232e2,
+					4.672581273284307e1,
+					-2.2140158004100098e1
+				],
+				"surface":{
+					"type":"sphere",
+					"center_at_reference_re":[
+						3.2299431129910886e2,
+						-7.237170915477438,
+						1.5151097035825476
+					],
+					"radius_re":6.882482107400253e1,
+					"sigma_re2":4.736855995868462e3,
+					"normal_gse_at_reference":[
+						-0.9526606531083033,
+						-0.2557320981031026,
+						0.16443471050555697
+					],
+					"max_squared_distance_residual_re2":2.41016095969826e-9
+				}
+			}
+		}
+	},
+	"2022-04-12 11-45-00":{
+		"planar":{
+			"dscovr,wind,themis_b,mms1":{
+				"satellite_string":"dscovr,wind,themis_b,mms1",
+				"satellites":[
+					"dscovr",
+					"wind",
+					"themis_b",
+					"mms1"
+				],
+				"reference_satellite":"dscovr",
+				"reference_time":"2022-04-12T10:34:50+00:00",
+				"radial_propagation":false,
+				"propagation_direction_gse":[
+					-0.9900935914667166,
+					-0.10389887086920312,
+					9.444418864410498e-2
+				],
+				"speed_re_s":1.4189774111645001e-2,
+				"speed_km_s":9.050237928407182e1,
+				"shock_velocity_gse_km_s":[
+					-8.960582574164964e1,
+					-9.403095018591422,
+					8.547423781845218
+				],
+				"surface":{
+					"type":"plane",
+					"normal_gse":[
+						-0.12253132011180819,
+						-0.3716331744423509,
+						0.9202580394897721
+					],
+					"offset_re":-1.944322904555245e1,
+					"max_residual_re":1.1438596977113824e-14
+				}
+			}
+		},
+		"spherical":{
+			"dscovr,ace,wind,themis_b,mms1":{
+				"satellite_string":"dscovr,ace,wind,themis_b,mms1",
+				"satellites":[
+					"dscovr",
+					"ace",
+					"wind",
+					"themis_b",
+					"mms1"
+				],
+				"reference_satellite":"dscovr",
+				"reference_time":"2022-04-12T10:34:50+00:00",
+				"radial_propagation":false,
+				"propagation_direction_gse":[
+					-0.9900935914667166,
+					-0.10389887086920312,
+					9.444418864410498e-2
+				],
+				"speed_re_s":1.5835566709159483e-2,
+				"speed_km_s":1.0099924447101918e2,
+				"shock_velocity_gse_km_s":[
+					-9.99987046937363e1,
+					-1.0493707459181499e1,
+					9.538791697733012
+				],
+				"surface":{
+					"type":"sphere",
+					"center_at_reference_re":[
+						-2.6769078144256275e2,
+						-1.107613071103161e3,
+						2.825833890599246e3
+					],
+					"radius_re":3.0671219573473727e3,
+					"sigma_re2":9.407237101242378e6,
+					"normal_gse_at_reference":[
+						-0.16410831004241022,
+						-0.3746240746872997,
+						0.9125378157861233
+					],
+					"max_squared_distance_residual_re2":3.725290298461914e-9
 				}
 			}
 		}
