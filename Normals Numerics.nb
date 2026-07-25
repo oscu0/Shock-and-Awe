@@ -1309,6 +1309,548 @@ solution; found \\!\\(\\*RowBox[{\\\"0\\\"}]\\).\"", 2, 467, 13,
  CellLabel->"",ExpressionUUID->"54829301-5613-4737-9061-425e30e3e2af"]
 }, Open  ]]
 }, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["All available normal fits", "Section",ExpressionUUID->"ff91bbfa-f1d6-4283-b88f-161d01e695f7"],
+
+Cell["\<\
+This workflow enumerates every four-spacecraft planar fit and every \
+five-spacecraft spherical fit from the valid GSE crossing records of the \
+selected event. Only solver results that pass the existing physical branch \
+checks are written.\
+\>", "Text",ExpressionUUID->"cf700794-164d-49d4-bac5-cb87a3da6326"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[",
+    RowBox[{
+    "allFitSatelliteQ", ",", " ", "availableFitSatellites", ",", " ",
+     "allFitParameters"}], "]"}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"allFitSatelliteQ", "[", "record_Association", "]"}], " ", ":=",
+    " ",
+    RowBox[{"Module", "[",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{"position", ",", " ", "coordinates"}], "}"}], ",", "\n", "  ",
+
+      RowBox[{
+       RowBox[{"position", " ", "=", " ",
+        RowBox[{"Lookup", "[",
+         RowBox[{"record", ",", " ", "\"\<position\>\"", ",", " ",
+          RowBox[{"Missing", "[", "\"\<position\>\"", "]"}]}], "]"}]}], ";",
+       "\n", "  ",
+       RowBox[{
+        RowBox[{"AssociationQ", "[", "position", "]"}], " ", "&&", "\n",
+        "   ",
+        RowBox[{
+         RowBox[{"Lookup", "[",
+          RowBox[{"position", ",", " ", "\"\<frame\>\"", ",", " ",
+           RowBox[{"Missing", "[", "\"\<frame\>\"", "]"}]}], "]"}], " ", "===",
+          " ", "\"\<GSE\>\""}], " ", "&&", "\n", "   ",
+        RowBox[{
+         RowBox[{"Lookup", "[",
+          RowBox[{"position", ",", " ", "\"\<units\>\"", ",", " ",
+           RowBox[{"Missing", "[", "\"\<units\>\"", "]"}]}], "]"}], " ", "===",
+          " ", "\"\<R_E\>\""}], " ", "&&", "\n", "   ",
+        RowBox[{"StringQ", "[",
+         RowBox[{"Lookup", "[",
+          RowBox[{"record", ",", " ", "\"\<t0\>\"", ",", " ",
+           RowBox[{"Missing", "[", "\"\<t0\>\"", "]"}]}], "]"}], "]"}], " ", "&&",
+         "\n", "   ",
+        RowBox[{"(",
+         RowBox[{
+          RowBox[{"coordinates", " ", "=", " ",
+           RowBox[{"N", "[",
+            RowBox[{"Lookup", "[",
+             RowBox[{"position", ",", " ",
+              RowBox[{"{",
+
+               RowBox[{"\"\<x\>\"", ",", " ", "\"\<y\>\"", ",",
+                " ", "\"\<z\>\""}], "}"}], ",", " ",
+              RowBox[{"Missing", "[", "\"\<coordinate\>\"", "]"}]}], "]"}],
+            "]"}]}], ";", "\n", "    ",
+          RowBox[{
+           RowBox[{"VectorQ", "[",
+            RowBox[{"coordinates", ",", " ", "NumericQ"}], "]"}], " ", "&&",
+           " ",
+           RowBox[{
+            RowBox[{"Length", "[", "coordinates", "]"}], " ", "==", " ",
+            "3"}]}]}], ")"}]}]}]}], "\n", "  ", "]"}]}], ";"}], "\n"}], "\n",
+
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"availableFitSatellites", "[", "eventKey_String", "]"}], " ", ":=",
+     "\n", " ",
+    RowBox[{"Sort", "[",
+     RowBox[{"Keys", "[",
+      RowBox[{"Select", "[",
+       RowBox[{
+        RowBox[{"shockParams", "[", "eventKey", "]"}], ",", " ",
+        "allFitSatelliteQ"}], "]"}], "]"}], "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"allFitParameters", "::", "event"}], " ", "=",
+   " ", "\"\<No event named `1` is available.\>\""}], ";"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"allFitParameters", "[", "eventKey_String", "]"}], " ", ":=", " ",
+
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "satellites", ",", " ", "direction", ",", " ", "planar", ",", " ",
+       "spherical"}], "}"}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"!", " ",
+         RowBox[{"KeyExistsQ", "[",
+          RowBox[{"shockParams", ",", " ", "eventKey"}], "]"}]}], ",", " ",
+        RowBox[{
+         RowBox[{"Message", "[",
+          RowBox[{
+           RowBox[{"allFitParameters", "::", "event"}], ",", " ",
+           "eventKey"}], "]"}], ";", " ",
+         RowBox[{"Return", "[", "$Failed", "]"}]}]}], "]"}], ";", "\n", "  ",
+
+      RowBox[{"direction", " ", "=", " ",
+       RowBox[{"propagationDirectionVector", "[", "eventKey", "]"}]}], ";",
+      "\n", "  ",
+      RowBox[{"If", "[",
+       RowBox[{
+        RowBox[{"!", " ",
+         RowBox[{"VectorQ", "[",
+          RowBox[{"direction", ",", " ", "NumericQ"}], "]"}]}], ",", " ",
+        RowBox[{"Return", "[", "$Failed", "]"}]}], "]"}], ";", "\n", "  ",
+      RowBox[{"satellites", " ", "=", " ",
+       RowBox[{"availableFitSatellites", "[", "eventKey", "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"planar", " ", "=", " ",
+       RowBox[{
+        RowBox[{
+         RowBox[{"modelParameters", "[",
+          RowBox[{
+          "eventKey", ",", " ", "\"\<planar\>\"", ",", " ", "#", ",", " ",
+           "direction"}], "]"}], " ", "&"}], " ", "/@", " ",
+        RowBox[{"Subsets", "[",
+         RowBox[{"satellites", ",", " ",
+          RowBox[{"{", "4", "}"}]}], "]"}]}]}], ";", "\n", "  ",
+      RowBox[{"spherical", " ", "=", " ",
+       RowBox[{
+        RowBox[{
+         RowBox[{"modelParameters", "[",
+          RowBox[{
+          "eventKey", ",", " ", "\"\<spherical\>\"", ",", " ", "#", ",", " ",
+           "direction"}], "]"}], " ", "&"}], " ", "/@", " ",
+        RowBox[{"Subsets", "[",
+         RowBox[{"satellites", ",", " ",
+          RowBox[{"{", "5", "}"}]}], "]"}]}]}], ";", "\n", "  ",
+      RowBox[{"<|",
+       RowBox[{
+        RowBox[{"\"\<event\>\"", " ", "->", " ", "eventKey"}], ",", " ",
+        RowBox[{"\"\<availableSatellites\>\"", " ", "->", " ", "satellites"}],
+         ",", "\n", "    ",
+        RowBox[{"\"\<planar\>\"", " ", "->", " ",
+         RowBox[{"Cases", "[",
+          RowBox[{"planar", ",", " ", "_Association"}], "]"}]}], ",", " ",
+        RowBox[{"\"\<spherical\>\"", " ", "->", " ",
+         RowBox[{"Cases", "[",
+          RowBox[{"spherical", ",", " ", "_Association"}], "]"}]}]}],
+       "|>"}]}]}], "\n", "  ", "]"}]}], ";"}]}], "Input",ExpressionUUID->"8ced1550-6c49-43e2-86a7-c330d65b02ff"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[", "solveAllShockNormals", "]"}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"solveAllShockNormals", "[", "allParameters_Association", "]"}],
+   " ", ":=", "\n", " ",
+   RowBox[{"AssociationMap", "[", "\n", "  ",
+    RowBox[{
+     RowBox[{"Function", "[",
+      RowBox[{"modelName", ",", "\n", "   ",
+       RowBox[{"Association", " ", "@", " ",
+        RowBox[{"Cases", "[", "\n", "     ",
+         RowBox[{
+          RowBox[{
+           RowBox[{"Function", "[",
+            RowBox[{"parameters", ",", "\n", "       ",
+             RowBox[{"Module", "[",
+              RowBox[{
+               RowBox[{"{", "result", "}"}], ",", "\n", "        ",
+               RowBox[{
+                RowBox[{"result", " ", "=", " ",
+                 RowBox[{"Switch", "[",
+                  RowBox[{
+                  "modelName", ",", "\n", "          ", "\"\<planar\>\"", ",",
+                    " ",
+                   RowBox[{"solvePlanarShock", "[", "parameters", "]"}], ",",
+                   "\n", "          ", "\"\<spherical\>\"", ",", " ",
+                   RowBox[{"solveSphericalShock", "[", "parameters", "]"}]}],
+                  "\n", "          ", "]"}]}], ";", "\n", "        ",
+                RowBox[{"If", "[",
+                 RowBox[{
+                  RowBox[{"AssociationQ", "[", "result", "]"}], ",", "\n",
+                  "         ",
+                  RowBox[{
+                   RowBox[{"StringRiffle", "[",
+                    RowBox[{
+                    RowBox[{"parameters", "[", "\"\<satellites\>\"", "]"}], ",",
+                     " ", "\"\<,\>\""}], "]"}], " ", "->", "\n", "          ",
+                   RowBox[{"<|",
+                    RowBox[{
+
+                    RowBox[{"\"\<parameters\>\"", " ", "->", " ",
+                    "parameters"}], ",", " ",
+                    RowBox[{"\"\<result\>\"", " ", "->", " ", "result"}]}],
+                    "|>"}]}], ",", "\n", "         ", "Nothing"}], "]"}]}]}],
+              "\n", "        ", "]"}]}], "\n", "       ", "]"}], " ", "/@",
+           " ",
+           RowBox[{"allParameters", "[", "modelName", "]"}]}], ",", "\n",
+          "     ", "_Rule"}], "]"}]}]}], "\n", "   ", "]"}], ",", "\n", "  ",
+
+     RowBox[{"{",
+      RowBox[{"\"\<planar\>\"", ",", " ", "\"\<spherical\>\""}], "}"}]}],
+    "\n", "  ", "]"}]}], ";"}]}], "Input",ExpressionUUID->"9dfa33b0-4ba3-4c00-a4a7-388e5576b34d"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[", "writeAllShockSurfaceResults", "]"}], ";"}],
+  "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"writeAllShockSurfaceResults", "[",
+    RowBox[{"eventKey_String", ",", " ", "allResults_Association"}], "]"}],
+   " ", ":=", " ",
+   RowBox[{"Module", "[", "\n", "  ",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+      "catalog", ",", " ", "eventRecord", ",", " ", "writtenRecords"}], "}"}],
+      ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"catalog", " ", "=", " ",
+       RowBox[{"If", "[",
+        RowBox[{
+         RowBox[{"FileExistsQ", "[", "shockNormalsPath", "]"}], ",", " ",
+         RowBox[{"Import", "[",
+          RowBox[{"shockNormalsPath", ",", " ", "\"\<RawJSON\>\""}], "]"}], ",",
+          " ",
+         RowBox[{"<|", "|>"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"eventRecord", " ", "=", " ",
+       RowBox[{"Lookup", "[",
+        RowBox[{"catalog", ",", " ", "eventKey", ",", " ",
+         RowBox[{"<|", "|>"}]}], "]"}]}], ";", "\n", "  ",
+      RowBox[{"writtenRecords", " ", "=", " ",
+       RowBox[{"AssociationMap", "[", "\n", "    ",
+        RowBox[{
+         RowBox[{"Function", "[",
+          RowBox[{"modelName", ",", "\n", "     ",
+           RowBox[{"Association", " ", "@", " ",
+            RowBox[{"KeyValueMap", "[", "\n", "       ",
+             RowBox[{
+              RowBox[{"Function", "[",
+               RowBox[{
+                RowBox[{"{",
+                 RowBox[{"satelliteKey", ",", " ", "fit"}], "}"}], ",", "\n",
+                "        ",
+                RowBox[{"satelliteKey", " ", "->", " ",
+                 RowBox[{"shockSurfaceRecord", "[",
+                  RowBox[{"modelName", ",", " ",
+                   RowBox[{"fit", "[", "\"\<parameters\>\"", "]"}], ",", " ",
+
+                   RowBox[{"fit", "[", "\"\<result\>\"", "]"}]}], "]"}]}]}],
+               "\n", "        ", "]"}], ",", "\n", "       ",
+              RowBox[{"allResults", "[", "modelName", "]"}]}], "]"}]}]}],
+          "\n", "     ", "]"}], ",", "\n", "    ",
+         RowBox[{"{",
+          RowBox[{"\"\<planar\>\"", ",", " ", "\"\<spherical\>\""}], "}"}]}],
+        "\n", "    ", "]"}]}], ";", "\n", "  ",
+      RowBox[{"AssociateTo", "[",
+       RowBox[{"eventRecord", ",", " ",
+        RowBox[{"<|",
+         RowBox[{
+          RowBox[{"\"\<planar\>\"", " ", "->", " ",
+           RowBox[{"writtenRecords", "[", "\"\<planar\>\"", "]"}]}], ",",
+          "\n", "    ",
+          RowBox[{"\"\<spherical\>\"", " ", "->", " ",
+           RowBox[{"writtenRecords", "[", "\"\<spherical\>\"", "]"}]}]}],
+         "|>"}]}], "]"}], ";", "\n", "  ",
+      RowBox[{"AssociateTo", "[",
+       RowBox[{"catalog", ",", " ",
+        RowBox[{"eventKey", " ", "->", " ", "eventRecord"}]}], "]"}], ";",
+      "\n", "  ",
+      RowBox[{"Export", "[",
+       RowBox[{
+       "shockNormalsPath", ",", " ", "catalog", ",", " ", "\"\<RawJSON\>\""}],
+        "]"}], ";", "\n", "  ", "writtenRecords"}]}], "\n", "  ", "]"}]}],
+  ";"}]}], "Input",ExpressionUUID->"27186b74-f614-4794-9ddb-0ff0df64e1a1"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[",
+    RowBox[{"allFitInputSummary", ",", " ", "allFitResultSummary"}], "]"}],
+   ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"allFitInputSummary", "[", "parameters_Association", "]"}], " ", ":=",
+     " ",
+    RowBox[{"Grid", "[", "\n", "  ",
+     RowBox[{
+      RowBox[{"{",
+       RowBox[{
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"Style", "[",
+           RowBox[{"\"\<Valid crossings\>\"", ",", " ", "Bold"}], "]"}], ",",
+          " ",
+          RowBox[{"StringRiffle", "[",
+           RowBox[{
+            RowBox[{"satelliteNames", "[",
+             RowBox[{"parameters", "[", "\"\<availableSatellites\>\"", "]"}],
+             "]"}], ",", " ", "\"\< -> \>\""}], "]"}]}], "}"}], ",", "\n",
+        "   ",
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"Style", "[",
+
+           RowBox[{"\"\<Planar four-spacecraft subsets\>\"", ",", " ",
+            "Bold"}], "]"}], ",", " ",
+          RowBox[{"Length", "[",
+           RowBox[{"parameters", "[", "\"\<planar\>\"", "]"}], "]"}]}], "}"}],
+         ",", "\n", "   ",
+        RowBox[{"{",
+         RowBox[{
+          RowBox[{"Style", "[",
+
+           RowBox[{"\"\<Spherical five-spacecraft subsets\>\"", ",", " ",
+            "Bold"}], "]"}], ",", " ",
+          RowBox[{"Length", "[",
+           RowBox[{"parameters", "[", "\"\<spherical\>\"", "]"}], "]"}]}],
+         "}"}]}], "}"}], ",", "\n", "  ",
+      RowBox[{"Alignment", " ", "->", " ", "Left"}], ",", " ",
+      RowBox[{"Frame", " ", "->", " ", "All"}]}], "]"}]}], ";"}], "\n"}], "\n",
+ RowBox[{
+  RowBox[{
+   RowBox[{"allFitResultSummary", "[", "allResults_Association", "]"}], " ", ":=",
+    " ",
+   RowBox[{"Module", "[",
+    RowBox[{
+     RowBox[{"{", "rows", "}"}], ",", "\n", "  ",
+     RowBox[{
+      RowBox[{"rows", " ", "=", " ",
+       RowBox[{"Flatten", "[", "\n", "    ",
+        RowBox[{
+         RowBox[{"Table", "[", "\n", "     ",
+          RowBox[{
+           RowBox[{"KeyValueMap", "[", "\n", "      ",
+            RowBox[{
+             RowBox[{"Function", "[",
+              RowBox[{
+               RowBox[{"{",
+                RowBox[{"satelliteKey", ",", " ", "fit"}], "}"}], ",", "\n",
+               "       ",
+               RowBox[{"{",
+                RowBox[{
+                 RowBox[{"If", "[",
+                  RowBox[{
+                   RowBox[{"modelName", " ", "===", " ", "\"\<planar\>\""}], ",",
+                    " ", "\"\<Plane\>\"", ",", " ", "\"\<Sphere\>\""}], "]"}],
+                  ",", "\n", "        ",
+                 RowBox[{"StringRiffle", "[",
+                  RowBox[{
+                   RowBox[{"satelliteNames", "[",
+                    RowBox[{
+                    RowBox[{"fit", "[", "\"\<parameters\>\"", "]"}],
+                    "[", "\"\<satellites\>\"", "]"}], "]"}], ",",
+                   " ", "\"\< -> \>\""}], "]"}], ",", "\n", "        ",
+                 RowBox[{"NumberForm", "[",
+                  RowBox[{
+                   RowBox[{
+                    RowBox[{"fit", "[", "\"\<result\>\"", "]"}],
+                    "[", "\"\<speedKmPerSecond\>\"", "]"}], ",", " ",
+                   RowBox[{"{",
+                    RowBox[{"8", ",", " ", "1"}], "}"}]}], "]"}], ",", "\n",
+                 "        ",
+                 RowBox[{"NumberForm", "[",
+                  RowBox[{
+                   RowBox[{
+                    RowBox[{"fit", "[", "\"\<result\>\"", "]"}],
+                    "[", "\"\<normalGSE\>\"", "]"}], ",", " ",
+                   RowBox[{"{",
+                    RowBox[{"5", ",", " ", "3"}], "}"}]}], "]"}]}], "}"}]}],
+              "]"}], ",", "\n", "      ",
+             RowBox[{"allResults", "[", "modelName", "]"}]}], "]"}], ",",
+           "\n", "     ",
+           RowBox[{"{",
+            RowBox[{"modelName", ",", " ",
+             RowBox[{"{",
+              RowBox[{"\"\<planar\>\"", ",", " ", "\"\<spherical\>\""}],
+              "}"}]}], "}"}]}], "]"}], ",", "\n", "    ", "1"}], "]"}]}], ";",
+       "\n", "  ",
+      RowBox[{"Grid", "[",
+       RowBox[{
+        RowBox[{"Prepend", "[",
+         RowBox[{"rows", ",", "\n", "    ",
+          RowBox[{"{",
+           RowBox[{
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Model\>\"", ",", " ", "Bold"}], "]"}], ",", " ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Crossings\>\"", ",", " ", "Bold"}], "]"}], ",",
+            "\n", "     ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Translation scalar (km/s)\>\"", ",", " ", "Bold"}],
+             "]"}], ",", " ",
+            RowBox[{"Style", "[",
+             RowBox[{"\"\<Normal at reference (GSE)\>\"", ",", " ", "Bold"}],
+             "]"}]}], "}"}]}], "]"}], ",", "\n", "   ",
+        RowBox[{"Alignment", " ", "->", " ", "Left"}], ",", " ",
+        RowBox[{"Frame", " ", "->", " ", "All"}]}], "]"}]}]}], "\n", "  ",
+    "]"}]}], ";"}]}], "Input",ExpressionUUID->"2b4741eb-6179-4016-b47a-9ae3ade85fb3"],
+
+Cell[BoxData[
+ RowBox[{"If", "[",
+  RowBox[{
+   RowBox[{"eventKeys", " ", "===", " ",
+    RowBox[{"{", "}"}]}], ",", "\n", " ",
+   RowBox[{"Style", "[",
+    RowBox[{"\"\<No shock events were found in Shocks/Shock Params.json.\>\"",
+      ",", " ",
+     RowBox[{"Darker", "[", "Red", "]"}]}], "]"}], ",", "\n", " ",
+   RowBox[{"DynamicModule", "[",
+    RowBox[{
+     RowBox[{"{",
+      RowBox[{
+       RowBox[{"selectedEvent", " ", "=", " ",
+        RowBox[{"First", "[", "eventKeys", "]"}]}], ",", " ",
+       RowBox[{"selectedParameters", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotLoaded\>\"", "]"}]}], ",", "\n",
+       "   ",
+       RowBox[{"selectedResult", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ",", " ",
+       RowBox[{"selectedWrite", " ", "=", " ",
+        RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}]}], "}"}], ",",
+     "\n", "  ",
+     RowBox[{
+      RowBox[{"selectedParameters", " ", "=", " ",
+       RowBox[{"allFitParameters", "[", "selectedEvent", "]"}]}], ";", "\n",
+      "  ",
+      RowBox[{"Column", "[",
+       RowBox[{
+        RowBox[{"{", "\n", "    ",
+         RowBox[{
+          RowBox[{"Grid", "[",
+           RowBox[{
+            RowBox[{"{",
+             RowBox[{"{",
+              RowBox[{
+               RowBox[{"Style", "[",
+                RowBox[{"\"\<Event\>\"", ",", " ", "Bold"}], "]"}], ",", "\n",
+                "       ",
+               RowBox[{"PopupMenu", "[",
+                RowBox[{
+                 RowBox[{"Dynamic", "[",
+                  RowBox[{"selectedEvent", ",", "\n", "         ",
+                   RowBox[{
+                    RowBox[{"(",
+                    RowBox[{
+                    RowBox[{"selectedEvent", " ", "=", " ", "#"}], ";", " ",
+                    RowBox[{"selectedParameters", " ", "=", " ",
+                    RowBox[{"allFitParameters", "[", "#", "]"}]}], ";", "\n",
+                    "           ",
+                    RowBox[{"selectedResult", " ", "=", " ",
+                    RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ";",
+                     " ",
+                    RowBox[{"selectedWrite", " ", "=", " ",
+                    RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}]}],
+                    ")"}], " ", "&"}]}], "]"}], ",", " ", "eventKeys"}],
+                "]"}]}], "}"}], "}"}], ",", "\n", "     ",
+            RowBox[{"Alignment", " ", "->", " ", "Left"}]}], "]"}], ",", "\n",
+           "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"If", "[",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedParameters", "]"}], ",",
+             " ",
+             RowBox[{"allFitInputSummary", "[", "selectedParameters", "]"}], ",",
+              "\n", "      ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<This event has no valid GSE crossing records.\>\"",
+                ",", " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Button", "[",
+
+           RowBox[{"\"\<Solve and write all available physical fits\>\"", ",",
+             "\n", "     ",
+            RowBox[{
+             RowBox[{"selectedResult", " ", "=", " ",
+              RowBox[{
+              "solveAllShockNormals", "[", "selectedParameters", "]"}]}], ";",
+              "\n", "     ",
+             RowBox[{"selectedWrite", " ", "=", " ",
+              RowBox[{"writeAllShockSurfaceResults", "[",
+               RowBox[{"selectedEvent", ",", " ", "selectedResult"}],
+               "]"}]}]}], ",", "\n", "     ",
+            RowBox[{"Enabled", " ", "->", " ",
+             RowBox[{"Dynamic", "[",
+              RowBox[{"AssociationQ", "[", "selectedParameters", "]"}],
+              "]"}]}], ",", " ",
+            RowBox[{"Method", " ", "->", " ", "\"\<Queued\>\""}]}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"Which", "[", "\n", "      ",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedResult", "]"}], ",", " ",
+             RowBox[{"allFitResultSummary", "[", "selectedResult", "]"}], ",",
+              "\n", "      ",
+             RowBox[{"selectedResult", " ", "===", " ",
+              RowBox[{"Missing", "[", "\"\<NotSolved\>\"", "]"}]}], ",", "\n",
+              "       ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<Use the button to calculate every available fit.\>\
+\"", ",", " ", "Gray"}], "]"}], ",", "\n", "      ", "True", ",", " ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<The solve failed; see the messages above.\>\"", ",",
+                " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}], ",",
+           "\n", "    ",
+          RowBox[{"Dynamic", "[",
+           RowBox[{"Which", "[", "\n", "      ",
+            RowBox[{
+             RowBox[{"AssociationQ", "[", "selectedWrite", "]"}], ",", "\n",
+             "       ",
+             RowBox[{"Style", "[",
+
+              RowBox[{"\"\<Replaced this event's stored fit groups with every \
+accepted physical fit.\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Green", "]"}]}], "]"}], ",", "\n",
+             "      ",
+             RowBox[{"selectedWrite", " ", "===", " ",
+              RowBox[{"Missing", "[", "\"\<NotWritten\>\"", "]"}]}], ",", " ",
+              "Nothing", ",", "\n", "      ", "True", ",", " ",
+             RowBox[{"Style", "[",
+              RowBox[{"\"\<Results were not written.\>\"", ",", " ",
+               RowBox[{"Darker", "[", "Red", "]"}]}], "]"}]}], "]"}], "]"}]}],
+          "\n", "    ", "}"}], ",", " ",
+        RowBox[{"Spacings", " ", "->", " ", "1.5"}]}], "]"}]}]}], "\n", "  ",
+    "]"}]}], "\n", " ", "]"}]], "Input",ExpressionUUID->"2c2a33c9-fd0c-4ef9-9ce1-c39e3f8e780f"]
 }, Open  ]]
 },
 WindowSize->{707, 794},
