@@ -1,4 +1,4 @@
-"""Resume bounded STEREO-A and ACE CDAWeb archives, then merge verified chunks.
+"""Resume bounded heliospheric CDAWeb archives, then merge verified chunks.
 
 Examples (run in the icme3.12-metal environment):
     python cdaweb_archive.py download --start 2010-01-01 --end 2026-01-01
@@ -23,7 +23,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from astropy.coordinates import CartesianRepresentation, SkyCoord
 from cdasws import CdasWs
-from sunpy.coordinates import frames
+from sunpy.coordinates import frames, get_horizons_coord
 
 
 EARTH_RADIUS_KM = 6378.0
@@ -36,6 +36,25 @@ STEREO_VARIABLES = [
 ACE_MFI_VARIABLES = ["Magnitude", "BGSEc", "SC_pos_GSE"]
 ACE_H2_VARIABLES = ["Vp", "Np", "V_GSE"]
 ACE_K1_VARIABLES = ["Vp", "Np"]
+COHO_DATASETS = {
+    "stereo-b": "STB_COHO1HR_MERGED_MAG_PLASMA",
+    "psp": "PSP_COHO1HR_MERGED_MAG_PLASMA",
+    "solo": "SOLO_COHO1HR_MERGED_MAG_PLASMA",
+}
+HORIZONS_BODIES = {"stereo-b": "STEREO-B", "psp": "Parker Solar Probe", "solo": "Solar Orbiter"}
+COHO_POSITION_VARIABLES = ["radialDistance", "heliographicLatitude", "heliographicLongitude"]
+COHO_FIELD_VARIABLES = ["BR", "BT", "BN", "B"]
+COHO_PLASMA_VARIABLES = {
+    "stereo-b": ["plasmaSpeed", "plasmaDensity", "plasmaTemp"],
+    "psp": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
+    "solo": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
+}
+# Catalog end for the lost spacecraft is fixed; the other mission ends are checked live.
+MISSION_WINDOWS = {
+    "stereo-b": (pd.Timestamp("2007-01-01T00:00:00Z"), pd.Timestamp("2014-09-27T17:00:00Z")),
+    "psp": (pd.Timestamp("2018-08-12T00:00:00Z"), None),
+    "solo": (pd.Timestamp("2020-02-10T00:00:00Z"), None),
+}
 
 
 def utc(value):
@@ -51,6 +70,17 @@ def chunk_bounds(start, end, mission):
     cuts.append(end)
     cuts = sorted(set(cuts))
     return list(zip(cuts[:-1], cuts[1:]))
+
+
+def mission_interval(mission, start, end):
+    available_start, available_end = MISSION_WINDOWS.get(mission, (None, None))
+    clipped_start = max(start, available_start) if available_start is not None else start
+    clipped_end = min(end, available_end) if available_end is not None else end
+    if clipped_start >= clipped_end:
+        return None
+    if clipped_start != start or clipped_end != end:
+        print(f"CLIP {mission}: {clipped_start}..{clipped_end}", flush=True)
+    return clipped_start, clipped_end
 
 
 def chunk_stem(start, end):
@@ -72,6 +102,11 @@ def validate_coverage(missions, start, end, request_timeout):
             intervals.append(("AC_H2_SWE", start, min(end, ACE_SWE_SWITCH), pd.Timedelta("1h")))
         if end > ACE_SWE_SWITCH:
             intervals.append(("AC_K1_SWE", max(start, ACE_SWE_SWITCH), end, pd.Timedelta("1h")))
+    for mission, dataset in COHO_DATASETS.items():
+        if mission in missions:
+            interval = mission_interval(mission, start, end)
+            if interval is not None:
+                intervals.append((dataset, *interval, pd.Timedelta("1h")))
     cdas = CdasWs(timeout=request_timeout)
     try:
         for dataset, interval_start, interval_end, cadence in intervals:
@@ -214,6 +249,95 @@ def stereo_frame(data):
     return frame
 
 
+def precise_coho_frame(data, mission):
+    """Use hourly COHO measurements and precise Horizons positions, storing GSE vectors."""
+    columns = [
+        "B_X_GSE", "B_Y_GSE", "B_Z_GSE", "B", "N_p", "V", "T_p",
+        "X_GSE", "Y_GSE", "Z_GSE", "radialDistance",
+    ]
+    if mission in {"psp", "solo"}:
+        columns += ["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]
+    if data is None or len(data["Epoch"]) == 0:
+        return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], name="Epoch", tz="UTC")).astype(float)
+
+    source_index = epoch_index(data)
+    keep = ~source_index.duplicated(keep="last")
+    index = source_index[keep]
+    frame = pd.DataFrame(index=index)
+    frame.attrs["duplicate_epochs_dropped"] = int((~keep).sum())
+
+    ephemeris = get_horizons_coord(HORIZONS_BODIES[mission], index)
+    position_hgs = ephemeris.cartesian.xyz.to_value(u.au).T
+    if not np.isfinite(position_hgs).all():
+        raise ValueError(f"{mission}: nonfinite Horizons position")
+
+    # Verify the source fields really have the documented HGI/AU semantics.
+    radius = values(data, "radialDistance")[keep]
+    latitude = values(data, "heliographicLatitude")[keep]
+    longitude = values(data, "heliographicLongitude")[keep]
+    has_source_position = np.isfinite(radius) & np.isfinite(latitude) & np.isfinite(longitude) & (radius > 0)
+    if has_source_position.any():
+        hgi = SkyCoord(
+            longitude[has_source_position] * u.deg,
+            latitude[has_source_position] * u.deg,
+            distance=radius[has_source_position] * u.au,
+            frame=frames.HeliocentricInertial(obstime=index[has_source_position]),
+        )
+        source_hgs = hgi.transform_to(
+            frames.HeliographicStonyhurst(obstime=index[has_source_position])
+        ).cartesian.xyz.to_value(u.au).T
+        differences = np.linalg.norm(source_hgs - position_hgs[has_source_position], axis=1)
+        max_difference = float(np.max(differences))
+        if max_difference > 0.02:
+            raise ValueError(f"{mission}: COHO HGI position differs from Horizons by {max_difference:.4f} AU")
+        frame.attrs["max_coho_position_difference_au"] = max_difference
+    frame.attrs["position_source"] = "JPL Horizons"
+
+    radial = position_hgs / np.linalg.norm(position_hgs, axis=1)[:, None]
+    tangential = np.cross([0.0, 0.0, 1.0], radial)
+    tangential /= np.linalg.norm(tangential, axis=1)[:, None]
+    normal = np.cross(radial, tangential)
+    rtn_basis_hgs = np.stack((radial, tangential, normal), axis=2)
+    hgs = frames.HeliographicStonyhurst(obstime=index)
+    gse = frames.GeocentricSolarEcliptic(obstime=index)
+    origin = SkyCoord(
+        CartesianRepresentation(*(np.zeros_like(position_hgs).T * u.au)), frame=hgs
+    ).transform_to(gse).cartesian.xyz.to_value(u.au).T
+
+    def rotate(raw):
+        result = np.full_like(raw, np.nan)
+        valid = np.isfinite(raw).all(axis=1)
+        if valid.any():
+            vector_hgs = np.einsum("nij,nj->ni", rtn_basis_hgs[valid], raw[valid])
+            local = SkyCoord(
+                CartesianRepresentation(*(vector_hgs.T * u.au)),
+                frame=frames.HeliographicStonyhurst(obstime=index[valid]),
+            )
+            converted = local.transform_to(
+                frames.GeocentricSolarEcliptic(obstime=index[valid])
+            ).cartesian.xyz.to_value(u.au).T
+            result[valid] = converted - origin[valid]
+        return result
+
+    magnetic_rtn = np.column_stack([values(data, name)[keep] for name in ("BR", "BT", "BN")])
+    frame[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]] = rotate(magnetic_rtn)
+    frame["B"] = values(data, "B")[keep]
+    if mission == "stereo-b":
+        frame["V"] = values(data, "plasmaSpeed")[keep]
+        frame["N_p"] = values(data, "plasmaDensity")[keep]
+        frame["T_p"] = values(data, "plasmaTemp")[keep]
+    else:
+        velocity_rtn = np.column_stack([values(data, name)[keep] for name in ("VR", "VT", "VN")])
+        frame[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = rotate(velocity_rtn)
+        frame["V"] = values(data, "ProtonSpeed")[keep]
+        frame["N_p"] = values(data, "protonDensity")[keep]
+        frame["T_p"] = values(data, "protonTemp")[keep]
+    position_gse = ephemeris.transform_to(gse).cartesian.xyz.to_value(u.au).T
+    frame[["X_GSE", "Y_GSE", "Z_GSE"]] = position_gse * (u.au.to(u.km) / EARTH_RADIUS_KM)
+    frame["radialDistance"] = np.linalg.norm(position_hgs, axis=1) * (u.au.to(u.km) / EARTH_RADIUS_KM)
+    return frame
+
+
 def ace_frame(mfi_data, swe_data, swe_dataset):
     mfi_index = epoch_index(mfi_data) if mfi_data is not None else pd.DatetimeIndex([], name="Epoch", tz="UTC")
     mfi = pd.DataFrame(index=mfi_index)
@@ -252,6 +376,12 @@ def download_chunk(cdas, mission, start, end):
         data = request(cdas, "STA_COHO1HR_MERGED_MAG_PLASMA", STEREO_VARIABLES, start, end)
         frame = stereo_frame(data)
         sources = ["STA_COHO1HR_MERGED_MAG_PLASMA"]
+    elif mission in COHO_DATASETS:
+        dataset = COHO_DATASETS[mission]
+        variables = COHO_FIELD_VARIABLES + COHO_PLASMA_VARIABLES[mission] + COHO_POSITION_VARIABLES
+        data = request(cdas, dataset, variables, start, end)
+        frame = precise_coho_frame(data, mission)
+        sources = [dataset, "JPL Horizons"]
     elif mission == "ace":
         if start < ACE_SWE_SWITCH < end:
             raise ValueError("ACE chunk crosses the SWE product switch")
@@ -284,7 +414,11 @@ def save_chunk(root, mission, start, end, frame, sources):
         "rows": len(frame),
         "no_data": frame.empty,
         "duplicate_epochs_dropped": frame.attrs.get("duplicate_epochs_dropped", 0),
+        "position_source": frame.attrs.get("position_source", sources[0]),
+        "max_coho_position_difference_au": frame.attrs.get("max_coho_position_difference_au"),
         "valid_b_vectors": int(frame[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]].notna().all(axis=1).sum()),
+        "valid_velocity_vectors": int(frame[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]].notna().all(axis=1).sum())
+        if all(column in frame for column in ("V_X_GSE", "V_Y_GSE", "V_Z_GSE")) else None,
         "valid_speed": int(frame["V"].notna().sum()),
         "valid_density": int(frame["N_p"].notna().sum()),
         "valid_position": int(frame[["X_GSE", "Y_GSE", "Z_GSE"]].notna().all(axis=1).sum()),
@@ -299,7 +433,11 @@ def save_chunk(root, mission, start, end, frame, sources):
 def download_archive(root, missions, start, end, attempts, retry_wait, request_timeout):
     failures = []
     for mission in missions:
-        bounds = chunk_bounds(start, end, mission)
+        interval = mission_interval(mission, start, end)
+        if interval is None:
+            print(f"SKIP {mission}: no overlap with requested interval", flush=True)
+            continue
+        bounds = chunk_bounds(*interval, mission)
         for number, (chunk_start, chunk_end) in enumerate(bounds, 1):
             if completed_chunk(root, mission, chunk_start, chunk_end):
                 print(f"SKIP {mission} {number}/{len(bounds)} {chunk_start}..{chunk_end}", flush=True)
@@ -328,11 +466,16 @@ def download_archive(root, missions, start, end, attempts, retry_wait, request_t
 
 def merge_archive(root, missions, start, end):
     for mission in missions:
-        bounds = chunk_bounds(start, end, mission)
+        interval = mission_interval(mission, start, end)
+        if interval is None:
+            print(f"SKIP {mission}: no overlap with requested interval", flush=True)
+            continue
+        mission_start, mission_end = interval
+        bounds = chunk_bounds(mission_start, mission_end, mission)
         missing = [(a, b) for a, b in bounds if not completed_chunk(root, mission, a, b)]
         if missing:
             raise RuntimeError(f"{mission}: {len(missing)} missing or invalid chunks; first is {missing[0]}")
-        output = root / "merged" / f"{mission}_{chunk_stem(start, end)}.parquet"
+        output = root / "merged" / f"{mission}_{chunk_stem(mission_start, mission_end)}.parquet"
         output.parent.mkdir(parents=True, exist_ok=True)
         temporary = output.with_suffix(".parquet.tmp")
         previous_last = None
@@ -366,7 +509,7 @@ def main():
     parser.add_argument("mode", choices=["download", "merge"])
     parser.add_argument("--start", required=True, help="Inclusive UTC start, e.g. 2010-01-01")
     parser.add_argument("--end", required=True, help="Exclusive UTC end, e.g. 2026-01-01")
-    parser.add_argument("--mission", choices=["both", "stereo-a", "ace"], default="both")
+    parser.add_argument("--mission", choices=["both", "all", "stereo-a", "stereo-b", "ace", "psp", "solo"], default="both")
     parser.add_argument("--output-dir", type=Path, default=Path("Data/CDAWeb Archive"))
     parser.add_argument("--attempts", type=int, default=4)
     parser.add_argument("--retry-wait", type=float, default=2.0, help="Initial seconds before exponential retry")
@@ -375,7 +518,12 @@ def main():
     start, end = utc(args.start), utc(args.end)
     if start >= end or args.attempts < 1 or args.retry_wait < 0 or args.request_timeout < 1:
         parser.error("Require start < end, attempts >= 1, retry-wait >= 0, and request-timeout >= 1")
-    missions = ["stereo-a", "ace"] if args.mission == "both" else [args.mission]
+    if args.mission == "both":
+        missions = ["stereo-a", "ace"]
+    elif args.mission == "all":
+        missions = ["stereo-a", "stereo-b", "ace", "psp", "solo"]
+    else:
+        missions = [args.mission]
     if args.mode == "download":
         validate_coverage(missions, start, end, args.request_timeout)
         raise SystemExit(download_archive(args.output_dir, missions, start, end, args.attempts, args.retry_wait, args.request_timeout))
