@@ -74,6 +74,9 @@ in Earth radii (6378 km). Scalar `B` is the source's average of field magnitudes
 it need not equal the norm of the averaged vector. All products can have
 missing values. The chunk manifest's valid counts make that visible without
 silently filling gaps.
+Scalar field magnitude, speed, density, and temperature values at or below
+zero are stored as null, including the `AC_K1_SWE` `-999.9` and zero fills.
+Signed vector components are retained, including valid zero components.
 
 The script defaults to four attempts per chunk and a 180-second CDAWeb request
 timeout. `--attempts`, `--retry-wait`, and `--request-timeout` can be adjusted

@@ -29,6 +29,7 @@ from sunpy.coordinates import frames, get_horizons_coord
 EARTH_RADIUS_KM = 6378.0
 ACE_SWE_SWITCH = pd.Timestamp("2018-01-01T00:00:00Z")
 SCHEMA_VERSION = 2
+SCALAR_CLAMP_VERSION = 1
 STEREO_VARIABLES = [
     "BR", "BT", "BN", "B", "plasmaSpeed", "plasmaDensity", "plasmaTemp",
     "radialDistance", "heliographicLatitude", "heliographicLongitude",
@@ -143,6 +144,7 @@ def completed_chunk(root, mission, start, end):
         return False
     return (
         info.get("schema_version") == SCHEMA_VERSION
+        and info.get("scalar_clamp_version") == SCALAR_CLAMP_VERSION
         and info.get("mission") == mission
         and info.get("start") == start.isoformat()
         and info.get("end") == end.isoformat()
@@ -156,6 +158,13 @@ def values(data, name, width=None):
         raise ValueError(f"{name} has shape {arr.shape}, expected (N, {width})")
     arr = arr.copy()
     arr[(~np.isfinite(arr)) | (np.abs(arr) >= 1e29) | np.isclose(arr, -99999.0)] = np.nan
+    return arr
+
+
+def positive_values(data, name):
+    """Mask fill codes and nonphysical zero/negative scalar measurements."""
+    arr = values(data, name)
+    arr[arr <= 0] = np.nan
     return arr
 
 
@@ -240,10 +249,10 @@ def stereo_frame(data):
             gse_field[valid_field] = transformed.cartesian.xyz.to_value(u.au).T - gse_origin[valid_field]
 
     frame[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]] = gse_field
-    frame["B"] = values(data, "B")[keep]
-    frame["N_p"] = values(data, "plasmaDensity")[keep]
-    frame["V"] = values(data, "plasmaSpeed")[keep]
-    frame["T_p"] = values(data, "plasmaTemp")[keep]
+    frame["B"] = positive_values(data, "B")[keep]
+    frame["N_p"] = positive_values(data, "plasmaDensity")[keep]
+    frame["V"] = positive_values(data, "plasmaSpeed")[keep]
+    frame["T_p"] = positive_values(data, "plasmaTemp")[keep]
     frame[["X_GSE", "Y_GSE", "Z_GSE"]] = gse_position * (u.au.to(u.km) / EARTH_RADIUS_KM)
     frame["radialDistance"] = radius * (u.au.to(u.km) / EARTH_RADIUS_KM)
     return frame
@@ -321,17 +330,17 @@ def precise_coho_frame(data, mission):
 
     magnetic_rtn = np.column_stack([values(data, name)[keep] for name in ("BR", "BT", "BN")])
     frame[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]] = rotate(magnetic_rtn)
-    frame["B"] = values(data, "B")[keep]
+    frame["B"] = positive_values(data, "B")[keep]
     if mission == "stereo-b":
-        frame["V"] = values(data, "plasmaSpeed")[keep]
-        frame["N_p"] = values(data, "plasmaDensity")[keep]
-        frame["T_p"] = values(data, "plasmaTemp")[keep]
+        frame["V"] = positive_values(data, "plasmaSpeed")[keep]
+        frame["N_p"] = positive_values(data, "plasmaDensity")[keep]
+        frame["T_p"] = positive_values(data, "plasmaTemp")[keep]
     else:
         velocity_rtn = np.column_stack([values(data, name)[keep] for name in ("VR", "VT", "VN")])
         frame[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = rotate(velocity_rtn)
-        frame["V"] = values(data, "ProtonSpeed")[keep]
-        frame["N_p"] = values(data, "protonDensity")[keep]
-        frame["T_p"] = values(data, "protonTemp")[keep]
+        frame["V"] = positive_values(data, "ProtonSpeed")[keep]
+        frame["N_p"] = positive_values(data, "protonDensity")[keep]
+        frame["T_p"] = positive_values(data, "protonTemp")[keep]
     position_gse = ephemeris.transform_to(gse).cartesian.xyz.to_value(u.au).T
     frame[["X_GSE", "Y_GSE", "Z_GSE"]] = position_gse * (u.au.to(u.km) / EARTH_RADIUS_KM)
     frame["radialDistance"] = np.linalg.norm(position_hgs, axis=1) * (u.au.to(u.km) / EARTH_RADIUS_KM)
@@ -343,7 +352,7 @@ def ace_frame(mfi_data, swe_data, swe_dataset):
     mfi = pd.DataFrame(index=mfi_index)
     if mfi_data is not None:
         mfi[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]] = values(mfi_data, "BGSEc", 3)
-        mfi["B"] = values(mfi_data, "Magnitude")
+        mfi["B"] = positive_values(mfi_data, "Magnitude")
         mfi[["X_GSE", "Y_GSE", "Z_GSE"]] = values(mfi_data, "SC_pos_GSE", 3) / EARTH_RADIUS_KM
     else:
         for column in ["B_X_GSE", "B_Y_GSE", "B_Z_GSE", "B", "X_GSE", "Y_GSE", "Z_GSE"]:
@@ -352,8 +361,8 @@ def ace_frame(mfi_data, swe_data, swe_dataset):
     swe_index = epoch_index(swe_data) if swe_data is not None else pd.DatetimeIndex([], name="Epoch", tz="UTC")
     swe = pd.DataFrame(index=swe_index)
     if swe_data is not None:
-        swe["V"] = values(swe_data, "Vp")
-        swe["N_p"] = values(swe_data, "Np")
+        swe["V"] = positive_values(swe_data, "Vp")
+        swe["N_p"] = positive_values(swe_data, "Np")
         if swe_dataset == "AC_H2_SWE":
             swe[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = values(swe_data, "V_GSE", 3)
         else:
@@ -407,6 +416,7 @@ def save_chunk(root, mission, start, end, frame, sources):
     frame.to_parquet(temporary_parquet)
     info = {
         "schema_version": SCHEMA_VERSION,
+        "scalar_clamp_version": SCALAR_CLAMP_VERSION,
         "mission": mission,
         "start": start.isoformat(),
         "end": end.isoformat(),
