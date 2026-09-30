@@ -19,6 +19,8 @@ conda run -n icme3.12-metal python cdaweb_archive.py merge --mission all --start
 `all` reuses verified STEREO-A and ACE chunks. Each mission can also run alone
 with `--mission stereo-a`, `stereo-b`, `ace`, `psp`, or `solo`. `download` writes
 independent calendar-month Parquet chunks under `Data/CDAWeb Archive/chunks/`.
+The requested start and end apply to every mission. A request outside a
+product's reported coverage prints a warning rather than changing the range.
 Each chunk has a JSON manifest with its interval, dataset IDs, row and valid
 value counts, and SHA-256. Rerunning the same command skips chunks whose
 manifest and checksum match. Failed chunks are reported and left incomplete;
@@ -42,15 +44,16 @@ in CDAWeb order, with the number dropped recorded in each manifest.
 
 The additional hourly sources are `STB_COHO1HR_MERGED_MAG_PLASMA`,
 `PSP_COHO1HR_MERGED_MAG_PLASMA`, and
-`SOLO_COHO1HR_MERGED_MAG_PLASMA`. Their requests are clipped to the mission
-windows: STEREO-B from 2007-01-01 through its last catalog hour at
+`SOLO_COHO1HR_MERGED_MAG_PLASMA`. Their known mission windows are STEREO-B
+from 2007-01-01 through its last catalog hour at
 2014-09-27 16:00 UTC, PSP from 2018-08-12, and Solar Orbiter from 2020-02-10.
-STEREO-B never requests data beyond that last hour. Its merged output uses
-the requested date range in the filename, but contains no fabricated hourly
-rows after the cutoff. A request wholly after the cutoff produces an empty
-STEREO-B Parquet with the normal columns.
-The latter two have no fixed end in the script; CDAWeb coverage is checked at
-the start of each download. The STEREO-B product supplies scalar plasma speed
+Chunks wholly outside these known windows are saved empty without a CDAWeb
+request. A STEREO-B chunk crossing its lifetime boundary asks CDAWeb only for
+the overlapping hours while retaining the full requested chunk interval.
+Merged output uses the requested date range in its filename and contains no
+fabricated hourly rows outside the available data. PSP and Solar Orbiter have
+no fixed end in the script; CDAWeb coverage is checked at the start of each
+download. The STEREO-B product supplies scalar plasma speed
 only. PSP and Solar Orbiter supply RTN plasma velocity components, which are
 rotated to GSE when present. Plasma availability can differ sharply from MAG
 availability; for example, PSP's April 2021 monthly sample had 211 valid

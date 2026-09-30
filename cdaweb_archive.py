@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from requests.exceptions import RequestException
 from astropy.coordinates import CartesianRepresentation, SkyCoord
 from cdasws import CdasWs
 from sunpy.coordinates import frames, get_horizons_coord
@@ -50,7 +51,7 @@ COHO_PLASMA_VARIABLES = {
     "psp": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
     "solo": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
 }
-# Catalog end for the lost spacecraft is fixed; the other mission ends are checked live.
+# Known mission boundaries only identify chunks that cannot contain measurements.
 MISSION_WINDOWS = {
     "stereo-b": (pd.Timestamp("2007-01-01T00:00:00Z"), pd.Timestamp("2014-09-27T17:00:00Z")),
     "psp": (pd.Timestamp("2018-08-12T00:00:00Z"), None),
@@ -73,15 +74,11 @@ def chunk_bounds(start, end, mission):
     return list(zip(cuts[:-1], cuts[1:]))
 
 
-def mission_interval(mission, start, end):
+def known_empty_chunk(mission, start, end):
     available_start, available_end = MISSION_WINDOWS.get(mission, (None, None))
-    clipped_start = max(start, available_start) if available_start is not None else start
-    clipped_end = min(end, available_end) if available_end is not None else end
-    if clipped_start >= clipped_end:
-        return None
-    if clipped_start != start or clipped_end != end:
-        print(f"CLIP {mission}: {clipped_start}..{clipped_end}", flush=True)
-    return clipped_start, clipped_end
+    return (available_start is not None and end <= available_start) or (
+        available_end is not None and start >= available_end
+    )
 
 
 def chunk_stem(start, end):
@@ -105,22 +102,26 @@ def validate_coverage(missions, start, end, request_timeout):
             intervals.append(("AC_K1_SWE", max(start, ACE_SWE_SWITCH), end, pd.Timedelta("1h")))
     for mission, dataset in COHO_DATASETS.items():
         if mission in missions:
-            interval = mission_interval(mission, start, end)
-            if interval is not None:
-                intervals.append((dataset, *interval, pd.Timedelta("1h")))
+            intervals.append((dataset, start, end, pd.Timedelta("1h")))
     cdas = CdasWs(timeout=request_timeout)
     try:
         for dataset, interval_start, interval_end, cadence in intervals:
-            matches = cdas.get_datasets(id=dataset)
+            try:
+                matches = cdas.get_datasets(id=dataset)
+            except RequestException as exc:
+                print(f"WARN {dataset}: coverage lookup failed ({type(exc).__name__}: {exc})", flush=True)
+                continue
             if len(matches) != 1:
                 raise RuntimeError(f"Could not resolve coverage for {dataset}")
             coverage = matches[0]["TimeInterval"]
             available_start = utc(coverage["Start"])
             available_end = utc(coverage["End"]) + cadence
             if interval_start < available_start or interval_end > available_end:
-                raise ValueError(
+                print(
+                    "WARN " +
                     f"{dataset} covers {available_start}..{available_end}; "
-                    f"requested {interval_start}..{interval_end}"
+                    f"requested {interval_start}..{interval_end}",
+                    flush=True,
                 )
     finally:
         cdas.close()
@@ -260,12 +261,10 @@ def stereo_frame(data):
 
 def precise_coho_frame(data, mission):
     """Use hourly COHO measurements and precise Horizons positions, storing GSE vectors."""
-    columns = [
-        "B_X_GSE", "B_Y_GSE", "B_Z_GSE", "B", "N_p", "V", "T_p",
-        "X_GSE", "Y_GSE", "Z_GSE", "radialDistance",
-    ]
+    columns = ["B_X_GSE", "B_Y_GSE", "B_Z_GSE", "B"]
     if mission in {"psp", "solo"}:
         columns += ["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]
+    columns += ["V", "N_p", "T_p", "X_GSE", "Y_GSE", "Z_GSE", "radialDistance"]
     if data is None or len(data["Epoch"]) == 0:
         return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], name="Epoch", tz="UTC")).astype(float)
 
@@ -388,8 +387,13 @@ def download_chunk(cdas, mission, start, end):
     elif mission in COHO_DATASETS:
         dataset = COHO_DATASETS[mission]
         variables = COHO_FIELD_VARIABLES + COHO_PLASMA_VARIABLES[mission] + COHO_POSITION_VARIABLES
-        request_interval = mission_interval(mission, start, end) if mission == "stereo-b" else (start, end)
-        data = request(cdas, dataset, variables, *request_interval) if request_interval is not None else None
+        if known_empty_chunk(mission, start, end):
+            data = None
+        elif mission == "stereo-b":
+            available_start, available_end = MISSION_WINDOWS[mission]
+            data = request(cdas, dataset, variables, max(start, available_start), min(end, available_end))
+        else:
+            data = request(cdas, dataset, variables, start, end)
         frame = precise_coho_frame(data, mission)
         sources = [dataset, "JPL Horizons"] if data is not None else [dataset]
     elif mission == "ace":
@@ -444,14 +448,15 @@ def save_chunk(root, mission, start, end, frame, sources):
 def download_archive(root, missions, start, end, attempts, retry_wait, request_timeout):
     failures = []
     for mission in missions:
-        interval = mission_interval(mission, start, end)
-        if interval is None:
-            print(f"SKIP {mission}: no overlap with requested interval", flush=True)
-            continue
-        bounds = chunk_bounds(*interval, mission)
+        bounds = chunk_bounds(start, end, mission)
         for number, (chunk_start, chunk_end) in enumerate(bounds, 1):
             if completed_chunk(root, mission, chunk_start, chunk_end):
                 print(f"SKIP {mission} {number}/{len(bounds)} {chunk_start}..{chunk_end}", flush=True)
+                continue
+            if known_empty_chunk(mission, chunk_start, chunk_end):
+                frame, sources = download_chunk(None, mission, chunk_start, chunk_end)
+                path = save_chunk(root, mission, chunk_start, chunk_end, frame, sources)
+                print(f"EMPTY {mission} {number}/{len(bounds)} {path}", flush=True)
                 continue
             for attempt in range(1, attempts + 1):
                 cdas = CdasWs(timeout=request_timeout)
@@ -477,27 +482,12 @@ def download_archive(root, missions, start, end, attempts, retry_wait, request_t
 
 def merge_archive(root, missions, start, end):
     for mission in missions:
-        interval = mission_interval(mission, start, end)
-        if interval is None:
-            if mission != "stereo-b":
-                print(f"SKIP {mission}: no overlap with requested interval", flush=True)
-                continue
-            mission_start, mission_end = start, start
-        else:
-            mission_start, mission_end = interval
-        bounds = chunk_bounds(mission_start, mission_end, mission)
+        bounds = chunk_bounds(start, end, mission)
         missing = [(a, b) for a, b in bounds if not completed_chunk(root, mission, a, b)]
         if missing:
             raise RuntimeError(f"{mission}: {len(missing)} missing or invalid chunks; first is {missing[0]}")
-        output_start, output_end = (start, end) if mission == "stereo-b" else (mission_start, mission_end)
-        output = root / "merged" / f"{mission}_{chunk_stem(output_start, output_end)}.parquet"
+        output = root / "merged" / f"{mission}_{chunk_stem(start, end)}.parquet"
         output.parent.mkdir(parents=True, exist_ok=True)
-        if mission == "stereo-b" and not bounds:
-            temporary = output.with_suffix(".parquet.tmp")
-            precise_coho_frame(None, mission).to_parquet(temporary)
-            os.replace(temporary, output)
-            print(f"MERGED {mission}: 0 rows -> {output}", flush=True)
-            continue
         temporary = output.with_suffix(".parquet.tmp")
         previous_last = None
         total_rows = 0
