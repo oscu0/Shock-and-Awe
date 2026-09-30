@@ -484,8 +484,21 @@ def download_archive(root, missions, start, end, attempts, retry_wait, request_t
 
 def merge_archive(root, missions, start, end):
     for mission in missions:
-        bounds = chunk_bounds(start, end, mission)
-        missing = [(a, b) for a, b in bounds if not completed_chunk(root, mission, a, b)]
+        bounds = []
+        missing = []
+        for a, b in chunk_bounds(start, end, mission):
+            if mission == "stereo-b" and known_empty_chunk(mission, a, b):
+                continue
+            if completed_chunk(root, mission, a, b):
+                bounds.append((a, b))
+                continue
+            if mission == "stereo-b":
+                available_start, available_end = MISSION_WINDOWS[mission]
+                shorter_start, shorter_end = max(a, available_start), min(b, available_end)
+                if completed_chunk(root, mission, shorter_start, shorter_end):
+                    bounds.append((shorter_start, shorter_end))
+                    continue
+            missing.append((a, b))
         if missing:
             raise RuntimeError(f"{mission}: {len(missing)} missing or invalid chunks; first is {missing[0]}")
         output = root / "merged" / f"{mission}_{chunk_stem(start, end)}.parquet"

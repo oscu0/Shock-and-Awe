@@ -55,10 +55,12 @@ query must begin at 09:00 UTC on launch day because Horizons has no PSP
 ephemeris before 08:16 TDB; querying the whole August 2018 month otherwise
 fails repeatedly during coordinate conversion.
 Merged output uses the requested date range in its filename and contains no
-fabricated hourly rows outside the available data. PSP and Solar Orbiter have
-no fixed end in the script; CDAWeb coverage is checked at the start of each
-download. The STEREO-B product supplies scalar plasma speed
-only. PSP and Solar Orbiter supply RTN plasma velocity components, which are
+fabricated hourly rows outside the available data. STEREO-B merges can reuse
+the earlier shortened final chunk and skip out-of-lifetime months even if
+empty chunks have not been downloaded. PSP and Solar Orbiter have no fixed end
+in the script; CDAWeb coverage is checked at the start of each download.
+The STEREO-B product supplies scalar plasma speed only. PSP and Solar Orbiter
+supply RTN plasma velocity components, which are
 rotated to GSE when present. Plasma availability can differ sharply from MAG
 availability; for example, PSP's April 2021 monthly sample had 211 valid
 velocity vectors out of 720 hourly rows.
