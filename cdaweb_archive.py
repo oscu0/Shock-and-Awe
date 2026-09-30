@@ -388,9 +388,10 @@ def download_chunk(cdas, mission, start, end):
     elif mission in COHO_DATASETS:
         dataset = COHO_DATASETS[mission]
         variables = COHO_FIELD_VARIABLES + COHO_PLASMA_VARIABLES[mission] + COHO_POSITION_VARIABLES
-        data = request(cdas, dataset, variables, start, end)
+        request_interval = mission_interval(mission, start, end) if mission == "stereo-b" else (start, end)
+        data = request(cdas, dataset, variables, *request_interval) if request_interval is not None else None
         frame = precise_coho_frame(data, mission)
-        sources = [dataset, "JPL Horizons"]
+        sources = [dataset, "JPL Horizons"] if data is not None else [dataset]
     elif mission == "ace":
         if start < ACE_SWE_SWITCH < end:
             raise ValueError("ACE chunk crosses the SWE product switch")
@@ -478,15 +479,25 @@ def merge_archive(root, missions, start, end):
     for mission in missions:
         interval = mission_interval(mission, start, end)
         if interval is None:
-            print(f"SKIP {mission}: no overlap with requested interval", flush=True)
-            continue
-        mission_start, mission_end = interval
+            if mission != "stereo-b":
+                print(f"SKIP {mission}: no overlap with requested interval", flush=True)
+                continue
+            mission_start, mission_end = start, start
+        else:
+            mission_start, mission_end = interval
         bounds = chunk_bounds(mission_start, mission_end, mission)
         missing = [(a, b) for a, b in bounds if not completed_chunk(root, mission, a, b)]
         if missing:
             raise RuntimeError(f"{mission}: {len(missing)} missing or invalid chunks; first is {missing[0]}")
-        output = root / "merged" / f"{mission}_{chunk_stem(mission_start, mission_end)}.parquet"
+        output_start, output_end = (start, end) if mission == "stereo-b" else (mission_start, mission_end)
+        output = root / "merged" / f"{mission}_{chunk_stem(output_start, output_end)}.parquet"
         output.parent.mkdir(parents=True, exist_ok=True)
+        if mission == "stereo-b" and not bounds:
+            temporary = output.with_suffix(".parquet.tmp")
+            precise_coho_frame(None, mission).to_parquet(temporary)
+            os.replace(temporary, output)
+            print(f"MERGED {mission}: 0 rows -> {output}", flush=True)
+            continue
         temporary = output.with_suffix(".parquet.tmp")
         previous_last = None
         total_rows = 0

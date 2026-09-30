@@ -45,6 +45,10 @@ The additional hourly sources are `STB_COHO1HR_MERGED_MAG_PLASMA`,
 `SOLO_COHO1HR_MERGED_MAG_PLASMA`. Their requests are clipped to the mission
 windows: STEREO-B from 2007-01-01 through its last catalog hour at
 2014-09-27 16:00 UTC, PSP from 2018-08-12, and Solar Orbiter from 2020-02-10.
+STEREO-B never requests data beyond that last hour. Its merged output uses
+the requested date range in the filename, but contains no fabricated hourly
+rows after the cutoff. A request wholly after the cutoff produces an empty
+STEREO-B Parquet with the normal columns.
 The latter two have no fixed end in the script; CDAWeb coverage is checked at
 the start of each download. The STEREO-B product supplies scalar plasma speed
 only. PSP and Solar Orbiter supply RTN plasma velocity components, which are
