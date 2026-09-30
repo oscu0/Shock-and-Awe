@@ -44,12 +44,16 @@ in CDAWeb order, with the number dropped recorded in each manifest.
 
 The additional hourly sources are `STB_COHO1HR_MERGED_MAG_PLASMA`,
 `PSP_COHO1HR_MERGED_MAG_PLASMA`, and
-`SOLO_COHO1HR_MERGED_MAG_PLASMA`. Their known mission windows are STEREO-B
-from 2007-01-01 through its last catalog hour at
-2014-09-27 16:00 UTC, PSP from 2018-08-12, and Solar Orbiter from 2020-02-10.
+`SOLO_COHO1HR_MERGED_MAG_PLASMA`. Their usable hourly windows begin at
+2007-01-01 for STEREO-B, 2018-08-12 09:00 UTC for PSP, and
+2020-02-10 06:00 UTC for Solar Orbiter. STEREO-B's last catalog hour is
+2014-09-27 16:00 UTC.
 Chunks wholly outside these known windows are saved empty without a CDAWeb
-request. A STEREO-B chunk crossing its lifetime boundary asks CDAWeb only for
-the overlapping hours while retaining the full requested chunk interval.
+request. A chunk crossing a known boundary asks CDAWeb only for the overlapping
+hours while retaining the full requested chunk interval. PSP's first hourly
+query must begin at 09:00 UTC on launch day because Horizons has no PSP
+ephemeris before 08:16 TDB; querying the whole August 2018 month otherwise
+fails repeatedly during coordinate conversion.
 Merged output uses the requested date range in its filename and contains no
 fabricated hourly rows outside the available data. PSP and Solar Orbiter have
 no fixed end in the script; CDAWeb coverage is checked at the start of each

@@ -51,11 +51,11 @@ COHO_PLASMA_VARIABLES = {
     "psp": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
     "solo": ["VR", "VT", "VN", "ProtonSpeed", "protonDensity", "protonTemp"],
 }
-# Known mission boundaries only identify chunks that cannot contain measurements.
+# First ephemeris-safe hourly epochs and STEREO-B's last catalog hour.
 MISSION_WINDOWS = {
     "stereo-b": (pd.Timestamp("2007-01-01T00:00:00Z"), pd.Timestamp("2014-09-27T17:00:00Z")),
-    "psp": (pd.Timestamp("2018-08-12T00:00:00Z"), None),
-    "solo": (pd.Timestamp("2020-02-10T00:00:00Z"), None),
+    "psp": (pd.Timestamp("2018-08-12T09:00:00Z"), None),
+    "solo": (pd.Timestamp("2020-02-10T06:00:00Z"), None),
 }
 
 
@@ -268,11 +268,13 @@ def precise_coho_frame(data, mission):
     if data is None or len(data["Epoch"]) == 0:
         return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], name="Epoch", tz="UTC")).astype(float)
 
-    source_index = epoch_index(data)
-    keep = ~source_index.duplicated(keep="last")
-    index = source_index[keep]
+    # CDAWeb can concatenate overlapping files out of time order (SolO launch month).
+    source_index = pd.DatetimeIndex(pd.to_datetime(np.asarray(data["Epoch"][...]), utc=True), name="Epoch")
+    rows = np.flatnonzero(~source_index.duplicated(keep="last"))
+    rows = rows[np.argsort(source_index[rows])]
+    index = source_index[rows]
     frame = pd.DataFrame(index=index)
-    frame.attrs["duplicate_epochs_dropped"] = int((~keep).sum())
+    frame.attrs["duplicate_epochs_dropped"] = len(source_index) - len(rows)
 
     ephemeris = get_horizons_coord(HORIZONS_BODIES[mission], index)
     position_hgs = ephemeris.cartesian.xyz.to_value(u.au).T
@@ -280,9 +282,9 @@ def precise_coho_frame(data, mission):
         raise ValueError(f"{mission}: nonfinite Horizons position")
 
     # Verify the source fields really have the documented HGI/AU semantics.
-    radius = values(data, "radialDistance")[keep]
-    latitude = values(data, "heliographicLatitude")[keep]
-    longitude = values(data, "heliographicLongitude")[keep]
+    radius = values(data, "radialDistance")[rows]
+    latitude = values(data, "heliographicLatitude")[rows]
+    longitude = values(data, "heliographicLongitude")[rows]
     has_source_position = np.isfinite(radius) & np.isfinite(latitude) & np.isfinite(longitude) & (radius > 0)
     if has_source_position.any():
         hgi = SkyCoord(
@@ -327,19 +329,19 @@ def precise_coho_frame(data, mission):
             result[valid] = converted - origin[valid]
         return result
 
-    magnetic_rtn = np.column_stack([values(data, name)[keep] for name in ("BR", "BT", "BN")])
+    magnetic_rtn = np.column_stack([values(data, name)[rows] for name in ("BR", "BT", "BN")])
     frame[["B_X_GSE", "B_Y_GSE", "B_Z_GSE"]] = rotate(magnetic_rtn)
-    frame["B"] = positive_values(data, "B")[keep]
+    frame["B"] = positive_values(data, "B")[rows]
     if mission == "stereo-b":
-        frame["V"] = positive_values(data, "plasmaSpeed")[keep]
-        frame["N_p"] = positive_values(data, "plasmaDensity")[keep]
-        frame["T_p"] = positive_values(data, "plasmaTemp")[keep]
+        frame["V"] = positive_values(data, "plasmaSpeed")[rows]
+        frame["N_p"] = positive_values(data, "plasmaDensity")[rows]
+        frame["T_p"] = positive_values(data, "plasmaTemp")[rows]
     else:
-        velocity_rtn = np.column_stack([values(data, name)[keep] for name in ("VR", "VT", "VN")])
+        velocity_rtn = np.column_stack([values(data, name)[rows] for name in ("VR", "VT", "VN")])
         frame[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = rotate(velocity_rtn)
-        frame["V"] = positive_values(data, "ProtonSpeed")[keep]
-        frame["N_p"] = positive_values(data, "protonDensity")[keep]
-        frame["T_p"] = positive_values(data, "protonTemp")[keep]
+        frame["V"] = positive_values(data, "ProtonSpeed")[rows]
+        frame["N_p"] = positive_values(data, "protonDensity")[rows]
+        frame["T_p"] = positive_values(data, "protonTemp")[rows]
     position_gse = ephemeris.transform_to(gse).cartesian.xyz.to_value(u.au).T
     frame[["X_GSE", "Y_GSE", "Z_GSE"]] = position_gse * (u.au.to(u.km) / EARTH_RADIUS_KM)
     frame["radialDistance"] = np.linalg.norm(position_hgs, axis=1) * (u.au.to(u.km) / EARTH_RADIUS_KM)
@@ -389,11 +391,11 @@ def download_chunk(cdas, mission, start, end):
         variables = COHO_FIELD_VARIABLES + COHO_PLASMA_VARIABLES[mission] + COHO_POSITION_VARIABLES
         if known_empty_chunk(mission, start, end):
             data = None
-        elif mission == "stereo-b":
-            available_start, available_end = MISSION_WINDOWS[mission]
-            data = request(cdas, dataset, variables, max(start, available_start), min(end, available_end))
         else:
-            data = request(cdas, dataset, variables, start, end)
+            available_start, available_end = MISSION_WINDOWS[mission]
+            query_start = max(start, available_start)
+            query_end = min(end, available_end) if available_end is not None else end
+            data = request(cdas, dataset, variables, query_start, query_end)
         frame = precise_coho_frame(data, mission)
         sources = [dataset, "JPL Horizons"] if data is not None else [dataset]
     elif mission == "ace":
