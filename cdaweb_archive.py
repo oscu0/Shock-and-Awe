@@ -31,13 +31,14 @@ EARTH_RADIUS_KM = 6378.0
 ACE_SWE_SWITCH = pd.Timestamp("2018-01-01T00:00:00Z")
 SCHEMA_VERSION = 2
 SCALAR_CLAMP_VERSION = 1
+ACE_TPR_VERSION = 1
 STEREO_VARIABLES = [
     "BR", "BT", "BN", "B", "plasmaSpeed", "plasmaDensity", "plasmaTemp",
     "radialDistance", "heliographicLatitude", "heliographicLongitude",
 ]
 ACE_MFI_VARIABLES = ["Magnitude", "BGSEc", "SC_pos_GSE"]
-ACE_H2_VARIABLES = ["Vp", "Np", "V_GSE"]
-ACE_K1_VARIABLES = ["Vp", "Np"]
+ACE_H2_VARIABLES = ["Vp", "Np", "Tpr", "V_GSE"]
+ACE_K1_VARIABLES = ["Vp", "Np", "Tpr"]
 COHO_DATASETS = {
     "stereo-b": "STB_COHO1HR_MERGED_MAG_PLASMA",
     "psp": "PSP_COHO1HR_MERGED_MAG_PLASMA",
@@ -146,6 +147,7 @@ def completed_chunk(root, mission, start, end):
     return (
         info.get("schema_version") == SCHEMA_VERSION
         and info.get("scalar_clamp_version") == SCALAR_CLAMP_VERSION
+        and (mission != "ace" or info.get("ace_tpr_version") == ACE_TPR_VERSION)
         and info.get("mission") == mission
         and info.get("start") == start.isoformat()
         and info.get("end") == end.isoformat()
@@ -364,12 +366,13 @@ def ace_frame(mfi_data, swe_data, swe_dataset):
     if swe_data is not None:
         swe["V"] = positive_values(swe_data, "Vp")
         swe["N_p"] = positive_values(swe_data, "Np")
+        swe["T_p"] = positive_values(swe_data, "Tpr")
         if swe_dataset == "AC_H2_SWE":
             swe[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = values(swe_data, "V_GSE", 3)
         else:
             swe[["V_X_GSE", "V_Y_GSE", "V_Z_GSE"]] = np.nan
     else:
-        for column in ["V", "N_p", "V_X_GSE", "V_Y_GSE", "V_Z_GSE"]:
+        for column in ["V", "N_p", "T_p", "V_X_GSE", "V_Y_GSE", "V_Z_GSE"]:
             swe[column] = pd.Series(dtype=float)
     swe["plasma_source_dataset"] = pd.Series(swe_dataset, index=swe.index, dtype="string")
     duplicate_count = int(mfi.index.duplicated(keep="last").sum() + swe.index.duplicated(keep="last").sum())
@@ -424,6 +427,7 @@ def save_chunk(root, mission, start, end, frame, sources):
     info = {
         "schema_version": SCHEMA_VERSION,
         "scalar_clamp_version": SCALAR_CLAMP_VERSION,
+        "ace_tpr_version": ACE_TPR_VERSION if mission == "ace" else None,
         "mission": mission,
         "start": start.isoformat(),
         "end": end.isoformat(),
@@ -438,6 +442,7 @@ def save_chunk(root, mission, start, end, frame, sources):
         if all(column in frame for column in ("V_X_GSE", "V_Y_GSE", "V_Z_GSE")) else None,
         "valid_speed": int(frame["V"].notna().sum()),
         "valid_density": int(frame["N_p"].notna().sum()),
+        "valid_temperature": int(frame["T_p"].notna().sum()) if "T_p" in frame else None,
         "valid_position": int(frame[["X_GSE", "Y_GSE", "Z_GSE"]].notna().all(axis=1).sum()),
         "sha256": sha256(temporary_parquet),
     }

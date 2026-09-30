@@ -77,6 +77,8 @@ heliocentric distance. Both use Earth radii.
 
 ACE combines hourly `AC_H2_MFI` with `AC_H2_SWE` before 2018-01-01 and
 `AC_K1_SWE` from that date onward, following the notebook's archive handoff.
+Both SWE products provide `Tpr`, stored as `T_p` in Kelvin. `Tpr` is the radial
+component of the proton temperature tensor, not an isotropic temperature.
 `AC_K1_SWE` is labeled preliminary/browse by CDAWeb and has no GSE velocity
 vector; those output components remain null. The switch is a calendar/model
 coefficient boundary, not an exact Carrington-rotation boundary.
