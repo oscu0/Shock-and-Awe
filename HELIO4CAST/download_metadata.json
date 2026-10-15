@@ -1,0 +1,127 @@
+{
+  "catalog": "HELIO4CAST ICMECAT v2.3",
+  "catalog_page": "https://helioforecast.space/icmecat",
+  "catalog_url": "https://raw.githubusercontent.com/cmoestl/heliocats/master/icmecat/HELIO4CAST_ICMECAT_v23.csv",
+  "header_url": "https://raw.githubusercontent.com/cmoestl/heliocats/master/icmecat/HELIO4CAST_ICMECAT_v23_header.txt",
+  "downloaded_at_utc": "2026-10-15T12:55:38.393354+00:00",
+  "source_events": 1976,
+  "columns": [
+    "",
+    "icmecat_id",
+    "sc_insitu",
+    "icme_start_time",
+    "mo_start_time",
+    "mo_end_time",
+    "mo_sc_heliodistance",
+    "mo_sc_long_heeq",
+    "mo_sc_lat_heeq",
+    "icme_duration",
+    "icme_bmax",
+    "icme_bmean",
+    "icme_bstd",
+    "icme_speed_mean",
+    "icme_speed_std",
+    "mo_duration",
+    "mo_bmax",
+    "mo_bmean",
+    "mo_bstd",
+    "mo_bzmean",
+    "mo_bzmin",
+    "mo_bzstd",
+    "mo_bymean",
+    "mo_bystd",
+    "mo_speed_mean",
+    "mo_speed_std",
+    "mo_expansion_speed",
+    "mo_pdyn_mean",
+    "mo_pdyn_std",
+    "mo_density_mean",
+    "mo_density_std",
+    "mo_temperature_mean",
+    "mo_temperature_std",
+    "sheath_speed_mean",
+    "sheath_speed_std",
+    "sheath_density_mean",
+    "sheath_density_std",
+    "sheath_pdyn_mean",
+    "sheath_pdyn_std"
+  ],
+  "selection": "2011-01-01T00:00:00+00:00 <= icme_start_time < 2016-01-01T00:00:00+00:00",
+  "preservation": "All source columns and values, missing fields, and row order retained; no unit/frame conversions.",
+  "spacecraft": {
+    "STEREO-A": {
+      "file": "HELIO4CAST_ICMECAT_v23_STEREO-A_2011-2015.csv",
+      "events": 141,
+      "events_by_year": {
+        "2011": 32,
+        "2012": 37,
+        "2013": 40,
+        "2014": 29,
+        "2015": 3
+      },
+      "first_icme_start_time": "2011-01-16T05:40Z",
+      "last_icme_start_time": "2015-12-02T11:33Z"
+    },
+    "STEREO-B": {
+      "file": "HELIO4CAST_ICMECAT_v23_STEREO-B_2011-2015.csv",
+      "events": 108,
+      "events_by_year": {
+        "2011": 28,
+        "2012": 33,
+        "2013": 29,
+        "2014": 18,
+        "2015": 0
+      },
+      "first_icme_start_time": "2011-01-17T15:46Z",
+      "last_icme_start_time": "2014-09-25T14:09Z"
+    },
+    "VEX": {
+      "file": "HELIO4CAST_ICMECAT_v23_Venus_Express_2011-2015.csv",
+      "events": 58,
+      "events_by_year": {
+        "2011": 18,
+        "2012": 16,
+        "2013": 13,
+        "2014": 11,
+        "2015": 0
+      },
+      "first_icme_start_time": "2011-03-18T20:47Z",
+      "last_icme_start_time": "2014-09-26T13:35Z"
+    },
+    "MESSENGER": {
+      "file": "HELIO4CAST_ICMECAT_v23_MESSENGER_2011-2015.csv",
+      "events": 68,
+      "events_by_year": {
+        "2011": 18,
+        "2012": 19,
+        "2013": 12,
+        "2014": 15,
+        "2015": 4
+      },
+      "first_icme_start_time": "2011-01-05T08:16Z",
+      "last_icme_start_time": "2015-04-22T00:49Z"
+    },
+    "Wind": {
+      "file": "HELIO4CAST_ICMECAT_v23_Wind_2011-2015.csv",
+      "events": 102,
+      "events_by_year": {
+        "2011": 22,
+        "2012": 30,
+        "2013": 21,
+        "2014": 15,
+        "2015": 14
+      },
+      "first_icme_start_time": "2011-01-24T06:43Z",
+      "last_icme_start_time": "2015-12-31T00:19Z"
+    }
+  },
+  "sha256": {
+    "source/HELIO4CAST_ICMECAT_v23.csv": "4ab51b795b549e7a26c0a8f17206abcad0c493ddd7255f62549335d0300d0d24",
+    "HELIO4CAST_ICMECAT_v23_header.txt": "be42a7795c099ab1dd40781d129234f0060d78a8162e2efd0bec853580bf78c3",
+    "HELIO4CAST_ICMECAT_v23_STEREO-A_2011-2015.csv": "bef0ea96316c9f47b285b9449fe63acb8405df6cc3c4a96217decff02b55cfe9",
+    "HELIO4CAST_ICMECAT_v23_STEREO-B_2011-2015.csv": "f81ad4c55684a9f5223265506028b1876bec2af23d902d531e003644e0773dc8",
+    "HELIO4CAST_ICMECAT_v23_Venus_Express_2011-2015.csv": "c80bd4b4ecc2c3e27dfd7da7ed865a5665cae9d99728075eee993ab4af6f201b",
+    "HELIO4CAST_ICMECAT_v23_MESSENGER_2011-2015.csv": "e1d77569bda38e494bf28e8a9ccad1e2d3d5bf294c3d58721f6611fe392427b3",
+    "HELIO4CAST_ICMECAT_v23_Wind_2011-2015.csv": "0efaa91e896c4ccf320378453bb51c65f9448c5256c13af0533d05dda0998848"
+  }
+}
