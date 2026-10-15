@@ -1,0 +1,4 @@
+# Preserve scientific snapshot/export bytes so recorded SHA-256 hashes survive checkout.
+HELIO4CAST/** -text
+Conjunctions/inputs/** -text whitespace=cr-at-eol
+Conjunctions/results/** -text

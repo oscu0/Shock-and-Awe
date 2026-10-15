@@ -1,0 +1,34 @@
+{
+  "tolerance_hours": 24.0,
+  "matching_rule": "Both catalog starts within inclusive tolerance of the same supplied daily conjunction timestamp",
+  "helio4cast_start_field": "mo_start_time",
+  "sinp_start_field": "T_start",
+  "naive_input_timezone_assumption": "UTC",
+  "source_catalog_url": "https://raw.githubusercontent.com/cmoestl/heliocats/master/icmecat/HELIO4CAST_ICMECAT_v23.csv",
+  "input_sha256": {
+    "messenger_conjunctions.csv": "93ee1a54cefa6d103bc2d55459be1991d6d19eca06240fae64c1897b604d0450",
+    "mercury_conj.xlsx": "a03dd9a3c5bea5fa48a6ca3424dce0358d19ba6d0683ca67146b2670c0e08518",
+    "merged_icme_short.csv": "50c12f748fc72662ef73dabe947f4a9d73b7d807fcaea29b8c7a09666f5ba6c7"
+  },
+  "helio4cast_sha256": {
+    "source/HELIO4CAST_ICMECAT_v23.csv": "4ab51b795b549e7a26c0a8f17206abcad0c493ddd7255f62549335d0300d0d24",
+    "HELIO4CAST_ICMECAT_v23_header.txt": "be42a7795c099ab1dd40781d129234f0060d78a8162e2efd0bec853580bf78c3",
+    "HELIO4CAST_ICMECAT_v23_STEREO-A_2011-2015.csv": "bef0ea96316c9f47b285b9449fe63acb8405df6cc3c4a96217decff02b55cfe9",
+    "HELIO4CAST_ICMECAT_v23_STEREO-B_2011-2015.csv": "f81ad4c55684a9f5223265506028b1876bec2af23d902d531e003644e0773dc8",
+    "HELIO4CAST_ICMECAT_v23_Venus_Express_2011-2015.csv": "c80bd4b4ecc2c3e27dfd7da7ed865a5665cae9d99728075eee993ab4af6f201b",
+    "HELIO4CAST_ICMECAT_v23_MESSENGER_2011-2015.csv": "e1d77569bda38e494bf28e8a9ccad1e2d3d5bf294c3d58721f6611fe392427b3",
+    "HELIO4CAST_ICMECAT_v23_Wind_2011-2015.csv": "0efaa91e896c4ccf320378453bb51c65f9448c5256c13af0533d05dda0998848"
+  },
+  "candidate_pairs": 14,
+  "daily_pairings": 17,
+  "output_sha256": {
+    "candidate_pairs.csv": "c65138384935696498a90421947cfa9661d906b3f6edb1e282b066c44c8cf8ae",
+    "daily_pair_matches.csv": "0babe713143239b8aeb496a479c60cf1d5231f55072ca9122ebe04caf6e1103a",
+    "catalog_summary.csv": "3f84b63e053ad8494c4a31b3f7d1d4d65114737a4cf280ec4782b4ef3710ecc4",
+    "earth_catalog_agreement.csv": "92a193bbd0b478135cb6cf3ec94e511a1b662cfa459ee48eec002ae0c05a63be",
+    "messenger_conjunction_opportunities.csv": "734f97a521344bf6e283ebc25a7769c06fb0b8c9e5f197dd790008715c0928c4",
+    "messenger_event_status.csv": "e8033b2540a4f810aa126e637722072714905cd529eef4b794e022b4f1af7178",
+    "sinp_missing_start.csv": "9f367d39f1d9d2576a94747ce75678af95d0e5ef8a14beb59aec724de777aa51",
+    "earlier_earth_selection_comparison.csv": "f806a690b49a240f9d70f7dd3809e2c45a30c493784ea3015375123c9f399b09"
+  }
+}

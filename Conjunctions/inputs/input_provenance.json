@@ -1,0 +1,14 @@
+{
+  "messenger_conjunctions.csv": {
+    "source": "supplied Mercury storm conjunction table",
+    "sha256": "93ee1a54cefa6d103bc2d55459be1991d6d19eca06240fae64c1897b604d0450"
+  },
+  "mercury_conj.xlsx": {
+    "source": "supplied Mercury storm workbook",
+    "sha256": "a03dd9a3c5bea5fa48a6ca3424dce0358d19ba6d0683ca67146b2670c0e08518"
+  },
+  "merged_icme_short.csv": {
+    "source": "../ICME_list/out/site/merged_icme_short.csv",
+    "sha256": "50c12f748fc72662ef73dabe947f4a9d73b7d807fcaea29b8c7a09666f5ba6c7"
+  }
+}
