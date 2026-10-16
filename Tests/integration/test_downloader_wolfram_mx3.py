@@ -109,6 +109,7 @@ def _append_code_cell(path: Path, code: str) -> None:
 
 def _copy_repo_inputs(root: Path) -> None:
     shutil.copy2(DOWNLOADER_NOTEBOOK, root / DOWNLOADER_NOTEBOOK.name)
+    shutil.copy2(REPO_ROOT / "downloader_cadence.py", root / "downloader_cadence.py")
     shutil.copy2(SYMPY_NOTEBOOK, root / SYMPY_NOTEBOOK.name)
     shutil.copy2(PLOTS_NOTEBOOK, root / PLOTS_NOTEBOOK.name)
     shutil.copytree(SHOCKS_DIR, root / "Shocks")
