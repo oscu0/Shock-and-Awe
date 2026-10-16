@@ -12,7 +12,7 @@ import pytest
 from nbclient import NotebookClient
 
 # Run explicitly:
-#   RUN_CDAWS_INTEGRATION=1 pytest -m integration tests/integration/test_downloader_wolfram_mx3.py -q
+#   RUN_CDAWS_INTEGRATION=1 pytest -m integration Tests/integration/test_downloader_wolfram_mx3.py -q
 RUN_INTEGRATION = os.getenv("RUN_CDAWS_INTEGRATION") == "1"
 
 pytestmark = [
