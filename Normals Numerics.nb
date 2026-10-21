@@ -206,7 +206,7 @@ Cell[BoxData[{
  RowBox[{
   RowBox[{
    RowBox[{"propagationDirectionVector", "::", "velocity"}], " ", "=",
-   " ", "\"\<Event `1` does not have a usable DSCOVR upstream velocity in GSE \
+   " ", "\"\<Event `1` does not have a usable Wind upstream velocity in GSE \
 km/s.\>\""}], ";"}], "\n",
  RowBox[{
   RowBox[{
@@ -248,7 +248,7 @@ km/s.\>\""}], ";"}], "\n",
          RowBox[{"Lookup", "[",
           RowBox[{
            RowBox[{"shockParams", "[", "eventKey", "]"}], ",",
-           " ", "\"\<dscovr\>\"", ",", " ",
+           " ", "\"\<wind\>\"", ",", " ",
            RowBox[{"<|", "|>"}]}], "]"}], ",", "\n",
          "   ", "\"\<velocity_upstream\>\"", ",", " ",
          RowBox[{"Missing", "[", "\"\<velocity_upstream\>\"", "]"}]}],
