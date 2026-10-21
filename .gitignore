@@ -926,3 +926,5 @@ Icon*
 # Keep Data directory structure out of git
 Data/*
 !Data/.gitkeep
+Audits/*
+!Audits/.gitkeep
